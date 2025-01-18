@@ -1,57 +1,3 @@
-/* 
- * L-system OpenSCAD Library by Hans Loeblich
- * 
- * Version 2.0
- * - Now supports "M" move without draw
- * - Also supports position save "[" and restore "]"
- * - Core functions have been completely rewritten and are about twice as fast using half the memory from before.
- * - Rules now take the form of a single string per rule: "X=ABC"
- * - Added new examples to demonstrate added features
- * 
- * This library is for creating L-systems, aka Lindenmayer Systems,
- * which are a kind of formal grammar that can be used to generate space-filling curves
- * and other fractal shapes by applying replacement rules recursively.
- * 
- * See https://en.wikipedia.org/wiki/L-system for a better, more detailed explanation.
- * Many of the example curves in this file use rules found on that Wikipedia page.
- * 
- * This script relies on recent features, so it is recommended to use a 2019 RC or nightly build of OpenSCAD.
- * Download from: http://www.openscad.org/downloads.html#snapshots
- * 
- * The "turtle graphics" used by the script supports the following operations:
- *   "F" : Moves the turtle "forward" by one unit and draws a line segment
- *   "M" : "Move" turtle forward without drawing (see island_curve example)
- *   "-" : Rotates the turtle to the left by the given angle (default 90 degrees)
- *   "+" : Rotates the turtle to the right by the given angle (default 90 degrees)
- *   "[" : Saves the current position and heading on the stack
- *   "]" : Restores the position and heading from the top of the stack
- * 
- * If your L-system rules use different symbols than "F" for forward
- * or "M" for move, you can specify an optional string of characters to interpret as each
- * of those operations, using the "draw_chars" and "move_chars" parameters for L_system2.
- * See examples: island_curve, gosper_curve, and sierpinski_triangle definitions.
- * 
- * Note: The models increase in complexity exponentially, so be careful with increasing values of 'n'
- * or the program may hang or consume many gigabytes of RAM.
- * 
- * Recommended absolute maximum 'n' values have been given for each curve,
- * most of which are currently limited by the 1,000,000 iteration limit for "C-style" for loops
- * in OpenSCAD. This is the limit of the final total instructions length after applying
- * replacement rules. That's also around the point where geometries may need multiple GB of RAM.
- * 
- * All the generated shapes are currently 2D, and it is recommended to **USE F6 RENDER** to view each curve.
- * It takes roughly the same time to complete as F5, but the framerate of moving the camera, etc.,
- * will be much better without OpenCSG rendering a 2D object as 3D on these complex models.
- */
-
-// Global Settings
-rounded = true; // Add circles at each vertex
-// Setting rounded = false gives slightly faster preview/render but an uglier curve path
-
-n = 18; // Default iteration level
-
-$fn = 16; // Fragment resolution
-
 /**
  * L_system2
  * 
@@ -99,46 +45,7 @@ module L_system2(start, rules, n, angle, w=0.4, draw_chars="F", move_chars="M", 
     echo("Done!");
 }
 
-/**
- * L_system_polygon
- * 
- * Draws a closed path using polygon. Assumes no move commands (all lines connected).
- * Only the Koch snowflake uses this currently.
- * 
- * @param start        Starting axiom string.
- * @param rules        Array of replacement rules in the form "X=ABC".
- * @param n            Number of iterations.
- * @param angle        Angle of rotation in degrees (default: 90).
- * @param draw_chars   Characters interpreted as draw commands (default: "F").
- */
-module L_system_polygon(start, rules, n, angle=90, draw_chars="F") {
-    startpos = [0,0];
-    heading = 0;
 
-    tables = create_lookup(start, rules, draw_chars, "");
-    // echo(tables);
-    instrs = apply_rules(start, tables[0], tables[1], n);
-    // echo(instrs);
-    l = len(instrs);
-    path = // C-style "for" list comprehension
-    [for(
-        i=0, ch=instrs[0],
-        pos=(ch=="F") ? startpos + [cos(heading), sin(heading)] : startpos,
-        heading=(ch=="-") ? heading-angle : (ch=="+") ? heading+angle : heading,
-        stack=(ch=="[") ? [[pos,heading]] : [];
-        i < l; // condition
-        // update variables
-        i = i+1,
-        ch = instrs[i],
-        pos = (ch=="F") ? pos + [cos(heading), sin(heading)] : (ch=="]") ? stack[0][0] : pos,
-        heading = (ch=="-") ? heading-angle : (ch=="+") ? heading+angle : (ch=="]") ? stack[0][1]: heading,
-        stack=(ch=="[") ? concat([[pos,heading]],stack) : (ch=="]") ? sublist(stack,1) : stack 
-        //,_=echo(ch,pos,newpos,heading,stack)       
-    )
-    if(ch=="F") pos ];
-    // echo(path);
-    polygon(path);
-}
 
 /**
  * join
