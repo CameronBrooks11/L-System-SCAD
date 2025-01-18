@@ -22,7 +22,7 @@ This library allows you to generate space-filling curves and fractal shapes by a
 - `"["`: Saves the current position and heading to the stack.
 - `"]"`: Restores the position and heading from the stack.
 
-If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters in `L_system2`. Examples of this can be seen in the `island_curve`, `gosper_curve`, and `sierpinski_triangle` modules.
+If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters in `L_system2`. An extensive range of examples can be found under `examples` folder.
 
 ## Version 2.0 Highlights
 
@@ -44,4 +44,4 @@ For more details on L-systems, visit [L-System Wikipedia](https://en.wikipedia.o
 ## Acknowledgent
 
 This is an extension and modularized version of [L-system OpenSCAD Library by Hans Loeblich](https://gist.github.com/thehans/a1494db8046a58832e2ebb10a5908a66).
-I would like to express my gratitude to Hans for his invaluable contributions to the OpenSCAD community which have been instrumental in shaping many of my own libraries and designs in OpenSCAD.
+I would like to express my gratitude to Hans for his invaluable contributions to the OpenSCAD community which have been instrumental in shaping many of my own libraries and designs in OpenSCAD. Also to [tecnoloxia](https://github.com/tecnoloxia) who contributed lots of examples through their 100hex project.
