@@ -24,12 +24,19 @@ This library allows you to generate space-filling curves and fractal shapes by a
 
 If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters in `L_system2`. An extensive range of examples can be found under `examples` folder.
 
-## Version 2.0 Highlights
+## Development
+
+### Changelog Highlights
 
 - **New operations**: The library now supports the `"M"` move without drawing and position-saving/position-restoring brackets (`[` and `]`).
 - **Performance improvements**: The core functions have been optimized for speed and memory efficiency, offering better performance for larger iterations.
 - **Rule format update**: Rules are now simpler and more flexible, taking the form of a single string per rule, e.g., `"X=ABC"`.
-- **Expanded examples**: New example curves and models are included to demonstrate the added features.
+- **Expanded examples**: Large number of new example curves and models were added to demonstrate the added features.
+
+### Future Work
+
+- A more concise and flexible method of storing predefined rulesets
+- Attempt at 3D modelling of L Systems
 
 ## Usage
 
