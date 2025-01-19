@@ -12,7 +12,6 @@ selected_curve = "fractal_var1"; // Change this to test different curves
 // "gosper_variation_tree",
 // "koch_snowflake_variant",
 // "square_sierpinski",
-// "square_sierpinski",
 // "x_border_joined_cross_curves",
 // "jaggy_cross",
 // "triangles_var6",
@@ -41,10 +40,6 @@ else if (selected_curve == "koch_snowflake_variant")
 else if (selected_curve == "square_sierpinski")
 {
     square_sierpinski(n = 3); // Recommended n <= 8
-}
-else if (selected_curve == "square_sierpinski")
-{
-    square_sierpinski(n = 9); // Recommended n <= 14
 }
 else if (selected_curve == "x_border_joined_cross_curves")
 {
