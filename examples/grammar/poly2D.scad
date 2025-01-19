@@ -1,3 +1,6 @@
+// Example 2D Polygon Definitions
+// TODO: extract all modules to the showcase file
+
 // Koch Snowflake
 function koch_snowflake() = let( //
     axiom = "F++F++F",           //

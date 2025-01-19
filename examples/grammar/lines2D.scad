@@ -1,4 +1,5 @@
 // Example 2D Curve Definitions
+// TODO: extract all modules to the showcase file
 
 // Dragon Curve
 function dragon_curve() = let(       //
@@ -302,15 +303,15 @@ module fractal_plant(n = 4, angle = 25, w = 0.1)
 }
 
 // Minkowski Curve
-function minkowski() = let( //
+function minkowski_curve() = let( //
     axiom = "F+F+F+F",      //
     rules = ["F=F+F-F-F+F"] //
     )[axiom, rules];
 
-module minkowski(n = 4, angle = 90, w = 0.4)
+module minkowski_curve(n = 4, angle = 90, w = 0.4)
 {
-    axiom = minkowski()[0];
-    rules = minkowski()[1];
+    axiom = minkowski_curve()[0];
+    rules = minkowski_curve()[1];
     L_system2(axiom, rules, n, angle, w);
 }
 

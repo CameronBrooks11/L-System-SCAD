@@ -4,7 +4,7 @@ use <../L-Systems.scad>;
 // Configuration: Select Your Curve
 // ================================
 
-selected_curve = "dragon_curve";
+selected_curve = "moore_square";
 
 // Options:
 // "dragon_curve",
@@ -33,7 +33,7 @@ selected_curve = "dragon_curve";
 // "tree",
 // "round_star",
 // "fractal_plant",
-// "minkowski",
+// "minkowski_curve",
 // "vicsek_fractal",
 // "koch_island",
 // "fractal_vine",
@@ -212,9 +212,9 @@ else if (selected_curve == "fractal_plant")
 {
     fractal_plant(n = 6, angle = 35, w = 0.1); // Recommended n <= 8
 }
-if (selected_curve == "minkowski")
+if (selected_curve == "minkowski_curve")
 {
-    minkowski(n = 4, angle = 90, w = 0.4); // Recommended n <= 6
+    minkowski_curve(n = 4, angle = 90, w = 0.4); // Recommended n <= 6
 }
 else if (selected_curve == "vicsek_fractal")
 {

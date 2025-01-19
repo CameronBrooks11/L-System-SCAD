@@ -35,7 +35,6 @@ If your L-system rules use different symbols than the default "F" for forward or
 
 ### Future Work
 
-- A more concise and flexible method of storing predefined rulesets
 - Attempt at 3D modelling of L Systems
 
 ## Usage
