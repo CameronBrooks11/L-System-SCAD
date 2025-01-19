@@ -28,45 +28,10 @@ module L_system2(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_ch
     if (debug)
         echo("Instructions:", instrs);
 
-    l = len(instrs); // get length of instruction set
-
-    // Generate a completely flat list of numbers, with each consecutive 4 numbers representing a line segment
-    // This doubles the output size necessary in most cases, but needed to support M (move without drawing) commands
-    coords = // C-style "for" list comprehension
-        [for (i = 0, ch = instrs[0], pos = startpos,
-              newpos = (ch == "F" || ch == "M") ? pos + [ cos(heading), sin(heading) ] : pos,
-              heading = (ch == "-")   ? heading - angle
-                        : (ch == "+") ? heading + angle
-                                      : heading,
-              stack = (ch == "[") ? [[pos, heading]] : [];
-
-              i < l; // condition
-
-              // update variables
-              i = i + 1,
-
-              ch = instrs[i], pos = newpos,
-
-              newpos = (ch == "F" || ch == "M") ? newpos + [ cos(heading), sin(heading) ]
-                       : (ch == "]")            ? stack[0][0]
-                                                : newpos,
-
-              heading = (ch == "-")   ? heading - angle
-                        : (ch == "+") ? heading + angle
-                        : (ch == "]") ? stack[0][1]
-                                      : heading,
-
-              stack = (ch == "[")   ? concat([[pos, heading]], stack)
-                      : (ch == "]") ? sublist(stack, 1)
-                                    : stack
-
-              //,_=echo(ch,pos,newpos,heading,stack)
-              ) // end for loop
-
-            if (ch == "F") // only draw if F command
-            if (poly) pos  // for polygon return only the position [x,y]
-            else           // otherwise return the line segment [xa,ya,xb,yb]
-            for (x = [ pos[0], pos[1], newpos[0], newpos[1] ]) x];
+    // Generate the coordinates based on the instructions
+    coords = genernate_coords(instrs, angle, startpos, heading, poly, w);
+    if (debug)
+        echo("Coords:", coords);
 
     if (poly)
         polygon(coords); // draw polygon
@@ -150,6 +115,60 @@ function apply_rules(start, table, final_table,
                      n) = n > 1
                               ? apply_rules([for (ch = start) for (c2 = table[ord(ch)]) c2], table, final_table, n - 1)
                               : (n == 1 ? [for (ch = start) for (c2 = final_table[ord(ch)]) c2] : start);
+
+/**
+ * genernate_coords
+ *
+ * Generates a list of coordinates based on instructions.
+ * If poly = true, it generates a list of [x, y] coordinates for a polygon.
+ * If poly = false, it generates a flat list where every consecutive 4 numbers represent a line segment.
+ * This doubles the output size necessary in most cases, but supports M (move without drawing) commands.
+ * The output is a C-style "for" list comprehension.
+ *
+ * @param instrs     Instructions for generating coordinates.
+ * @param l          Length of segments.
+ * @param angle      Angle for turning.
+ * @param startpos   Starting position for the first segment.
+ * @param heading    Heading (orientation) of the first segment.
+ * @param poly       Flag to determine if output should be polygonal or flat.
+ * @param w          Width of the segments.
+ * @return           List of coordinates or line segments based on the poly flag.
+ */
+function genernate_coords(instrs, angle, startpos, heading, poly, w) = let(l = len(instrs)) // end let
+    [for (i = 0, ch = instrs[0], pos = startpos,
+          newpos = (ch == "F" || ch == "M") ? pos + [ cos(heading), sin(heading) ] : pos,
+          heading = (ch == "-")   ? heading - angle
+                    : (ch == "+") ? heading + angle
+                                  : heading,
+          stack = (ch == "[") ? [[pos, heading]] : [];
+
+          i < l; // condition
+
+          // update variables
+          i = i + 1,
+
+          ch = instrs[i], pos = newpos,
+
+          newpos = (ch == "F" || ch == "M") ? newpos + [ cos(heading), sin(heading) ]
+                   : (ch == "]")            ? stack[0][0]
+                                            : newpos,
+
+          heading = (ch == "-")   ? heading - angle
+                    : (ch == "+") ? heading + angle
+                    : (ch == "]") ? stack[0][1]
+                                  : heading,
+
+          stack = (ch == "[")   ? concat([[pos, heading]], stack)
+                  : (ch == "]") ? sublist(stack, 1)
+                                : stack
+
+          //,_=echo(ch,pos,newpos,heading,stack)
+          ) // end for loop
+
+     if (ch == "F") // only draw if F command
+     if (poly) pos  // for polygon return only the position [x,y]
+     else           // otherwise return the line segment [xa,ya,xb,yb]
+     for (x = [ pos[0], pos[1], newpos[0], newpos[1] ]) x];
 
 // --------------------------------
 // Helper Functions
