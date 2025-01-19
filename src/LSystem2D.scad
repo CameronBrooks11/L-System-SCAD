@@ -1,7 +1,7 @@
 // L-system based model generator for 2D curves.
 
 /**
- * L_system2
+ * L_System2D
  *
  * Generates an L-system based model.
  *
@@ -15,7 +15,7 @@
  * @param heading      Initial heading angle in degrees (default: 0).
  * @param startpos     Starting position as [x, y] coordinates (default: [0, 0]).
  */
-module L_system2(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_chars = "M", heading = 0,
+module L_System2D(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_chars = "M", heading = 0,
                  startpos = [ 0, 0 ], poly = false)
 {
     // First create the lookup tables for rule replacement

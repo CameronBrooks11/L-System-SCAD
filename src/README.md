@@ -5,7 +5,7 @@ Welcome to da docs!
 The below diagram gives an idea of the logical flow of the program. Summary:
 
 - **_Modules_**
-  - **L_System2**: High-level module for generating an L-system based model.
+  - **L_System2D**: High-level module for generating an L-system based model.
   - **segmented_lines**: Draws line segments from coordinates.
   - **line**: Draws a single line segment.
 - **_Functions_**
@@ -20,10 +20,10 @@ The below diagram gives an idea of the logical flow of the program. Summary:
 
 ```mermaid
 graph TD
-  L_system2 --> create_lookup
-  L_system2 --> apply_rules
-  L_system2 --> generate_coords
-  L_system2 --> segmented_lines
+  L_System2D --> create_lookup
+  L_System2D --> apply_rules
+  L_System2D --> generate_coords
+  L_System2D --> segmented_lines
 
   create_lookup --> substr
   create_lookup --> in_list

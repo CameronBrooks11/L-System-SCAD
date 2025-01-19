@@ -11,7 +11,7 @@ module koch_snowflake(n = 4, angle = 60)
 {
     axiom = koch_snowflake()[0];
     rules = koch_snowflake()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Segment Curve II, src: 100hex
@@ -24,7 +24,7 @@ module segment_x(n = 2, angle = 90)
 {
     axiom = segment_x()[0];
     rules = segment_x()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Gosper Variation Tree, src: 100hex
@@ -37,7 +37,7 @@ module gosper_variation_tree(n = 3, angle = 60)
 {
     axiom = gosper_variation_tree()[0];
     rules = gosper_variation_tree()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Koch Snowflake Variant, src: 100hex
@@ -50,7 +50,7 @@ module koch_snowflake_variant(n = 3, angle = 30)
 {
     axiom = koch_snowflake_variant()[0];
     rules = koch_snowflake_variant()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Square Sierpinski, src: 100hex
@@ -63,7 +63,7 @@ module square_sierpinski(n = 3, angle = 90)
 {
     axiom = square_sierpinski()[0];
     rules = square_sierpinski()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // X-border - Joined Cross Curves, src: 100hex
@@ -76,7 +76,7 @@ module x_border_joined_cross_curves(n = 3, angle = 90)
 {
     axiom = x_border_joined_cross_curves()[0];
     rules = x_border_joined_cross_curves()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Jaggy-Cross2, src: 100hex
@@ -89,7 +89,7 @@ module jaggy_cross(n = 4, angle = 90)
 {
     axiom = jaggy_cross()[0];
     rules = jaggy_cross()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // Triángulos3a-root9, src: 100hex
@@ -102,7 +102,7 @@ module triangles_var6(n = 2, angle = 60)
 {
     axiom = triangles_var6()[0];
     rules = triangles_var6()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }
 
 // root16-fractal1, src: 100hex
@@ -115,5 +115,5 @@ module fractal_var1(n = 5, angle = 60)
 {
     axiom = fractal_var1()[0];
     rules = fractal_var1()[1];
-    L_system2(axiom, rules, n, angle, poly = true);
+    L_System2D(axiom, rules, n, angle, poly = true);
 }

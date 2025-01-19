@@ -11,7 +11,7 @@ module dragon_curve(n = 10, angle = 90, w = 0.4)
 {
     axiom = dragon_curve()[0];
     rules = dragon_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Twin Dragon
@@ -24,7 +24,7 @@ module twin_dragon(n = 10, angle = 90, w = 0.4)
 {
     axiom = twin_dragon()[0];
     rules = twin_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Terdragon
 function terdragon() = let( //
@@ -36,7 +36,7 @@ module terdragon(n = 10, angle = 120, w = 0.4)
 {
     axiom = terdragon()[0];
     rules = terdragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hilbert Curve
@@ -49,7 +49,7 @@ module hilbert_curve(n = 4, angle = 90, w = 0.4)
 {
     axiom = hilbert_curve()[0];
     rules = hilbert_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Moore Curve
@@ -62,7 +62,7 @@ module moore_square(n = 4, angle = 90, w = 0.4)
 {
     axiom = moore_square()[0];
     rules = moore_square()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Peano Curve
@@ -75,7 +75,7 @@ module peano_curve(n = 3, angle = 90, w = 0.4)
 {
     axiom = peano_curve()[0];
     rules = peano_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Gosper Curve
@@ -88,7 +88,7 @@ module gosper_curve(n = 4, angle = 60, w = 0.4)
 {
     axiom = gosper_curve()[0];
     rules = gosper_curve()[1];
-    L_system2(axiom, rules, n, angle, w, "AB");
+    L_System2D(axiom, rules, n, angle, w, "AB");
 }
 
 // Levy C Curve
@@ -101,7 +101,7 @@ module levy_c_curve(n = 10, angle = 45, w = 0.4)
 {
     axiom = levy_c_curve()[0];
     rules = levy_c_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Koch Curve
@@ -114,7 +114,7 @@ module koch_curve(n = 4, angle = 60, w = 0.4)
 {
     axiom = koch_curve()[0];
     rules = koch_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Quadratic Type 1 Koch
@@ -127,7 +127,7 @@ module quadratic_type1_koch(n = 4, angle = 90, w = 0.4)
 {
     axiom = quadratic_type1_koch()[0];
     rules = quadratic_type1_koch()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Quadratic Type 2 Koch
@@ -140,7 +140,7 @@ module quadratic_type2_koch(n = 4, angle = 90, w = 0.4)
 {
     axiom = quadratic_type2_koch()[0];
     rules = quadratic_type2_koch()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Quadratic Fractal 1, src: 100hex
@@ -153,7 +153,7 @@ module quadratic_fractal1(n = 2, angle = 90, w = 1.6)
 {
     axiom = quadratic_fractal1()[0];
     rules = quadratic_fractal1()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Quadratic Fractal 2, src: 100hex
 function quadratic_fractal2() = let(    //
@@ -165,7 +165,7 @@ module quadratic_fractal2(n = 2, angle = 90, w = 1.21)
 {
     axiom = quadratic_fractal2()[0];
     rules = quadratic_fractal2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Quadratic Fractal 3, src: 100hex
@@ -178,7 +178,7 @@ module quadratic_fractal3(n = 2, angle = 90, w = 1.21)
 {
     axiom = quadratic_fractal3()[0];
     rules = quadratic_fractal3()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Sierpinski Triangle
@@ -191,7 +191,7 @@ module sierpinski_triangle(n = 5, angle = 120, w = 0.2)
 {
     axiom = sierpinski_triangle()[0];
     rules = sierpinski_triangle()[1];
-    L_system2(axiom, rules, n, angle, w, "FG");
+    L_System2D(axiom, rules, n, angle, w, "FG");
 }
 
 // Sierpinski Arrowhead
@@ -204,7 +204,7 @@ module sierpinski_arrowhead(n = 6, angle = 60, w = 0.4)
 {
     axiom = sierpinski_arrowhead()[0];
     rules = sierpinski_arrowhead()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Island Curve
@@ -217,7 +217,7 @@ module island_curve(n = 10, angle = 90, w = 0.4)
 {
     axiom = island_curve()[0];
     rules = island_curve()[1];
-    L_system2(axiom, rules, n, angle, w, "F", "b");
+    L_System2D(axiom, rules, n, angle, w, "F", "b");
 }
 
 // Penrose Tiling
@@ -235,7 +235,7 @@ module penrose_tiling(n = 2, angle = 36, w = 0.2)
 {
     axiom = penrose_tiling()[0];
     rules = penrose_tiling()[1];
-    L_system2(axiom, rules, n, angle, w, "6789");
+    L_System2D(axiom, rules, n, angle, w, "6789");
 }
 
 // Pentadendrite
@@ -248,7 +248,7 @@ module pentadendrite(n = 2, angle = 72, w = 0.2)
 {
     axiom = pentadendrite()[0];
     rules = pentadendrite()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Icy Pattern
@@ -261,7 +261,7 @@ module icy(n = 2, angle = 90, w = 0.5)
 {
     axiom = icy()[0];
     rules = icy()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Tree
@@ -274,7 +274,7 @@ module tree(n = 2, angle = 36, w = 0.1)
 {
     axiom = tree()[0];
     rules = tree()[1];
-    L_system2(axiom, rules, n, angle, w, "F", "F", 90);
+    L_System2D(axiom, rules, n, angle, w, "F", "F", 90);
 }
 
 // Round Star
@@ -287,7 +287,7 @@ module round_star(n = 7, angle = 77, w = 0.001)
 {
     axiom = round_star()[0];
     rules = round_star()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Fractal Plant
 function fractal_plant() = let(                //
@@ -299,7 +299,7 @@ module fractal_plant(n = 4, angle = 25, w = 0.1)
 {
     axiom = fractal_plant()[0];
     rules = fractal_plant()[1];
-    L_system2(axiom, rules, n, angle, w, "FX");
+    L_System2D(axiom, rules, n, angle, w, "FX");
 }
 
 // Minkowski Curve
@@ -312,7 +312,7 @@ module minkowski_curve(n = 4, angle = 90, w = 0.4)
 {
     axiom = minkowski_curve()[0];
     rules = minkowski_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Vicsek Fractal
@@ -325,7 +325,7 @@ module vicsek_fractal(n = 3, angle = 90, w = 0.4)
 {
     axiom = vicsek_fractal()[0];
     rules = vicsek_fractal()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Koch Island
@@ -338,7 +338,7 @@ module koch_island(n = 4, angle = 60, w = 0.4)
 {
     axiom = koch_island()[0];
     rules = koch_island()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Fractal Vine
@@ -351,7 +351,7 @@ module fractal_vine(n = 5, angle = 25, w = 0.2)
 {
     axiom = fractal_vine()[0];
     rules = fractal_vine()[1];
-    L_system2(axiom, rules, n, angle, w, "F", "F");
+    L_System2D(axiom, rules, n, angle, w, "F", "F");
 }
 
 // Spiral Curve
@@ -364,7 +364,7 @@ module spiral_curve(n = 5, angle = 30, w = 0.3)
 {
     axiom = spiral_curve()[0];
     rules = spiral_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hexagonal Spiral
@@ -377,7 +377,7 @@ module hexagonal_spiral(n = 6, angle = 60, w = 0.3)
 {
     axiom = hexagonal_spiral()[0];
     rules = hexagonal_spiral()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Square Fractal
@@ -390,7 +390,7 @@ module square_fractal(n = 4, angle = 90, w = 0.4)
 {
     axiom = square_fractal()[0];
     rules = square_fractal()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Segment Curve 1, src: 100hex
@@ -403,7 +403,7 @@ module segment_curve(n = 2, angle = 90, w = 0.4)
 {
     axiom = segment_curve()[0];
     rules = segment_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Segment Curve 2, src: 100hex
@@ -416,7 +416,7 @@ module segment_curve_2(n = 2, angle = 90, w = 0.4)
 {
     axiom = segment_curve_2()[0];
     rules = segment_curve_2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Cesaro Sweep Variant, src: 100hex
@@ -429,7 +429,7 @@ module cesaro_sweep(n = 4, angle = 80, w = 0.4)
 {
     axiom = cesaro_sweep()[0];
     rules = cesaro_sweep()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Cesaro Carpet, src: 100hex
@@ -442,7 +442,7 @@ module cesaro_carpet(n = 3, angle = 90, w = 0.4)
 {
     axiom = cesaro_carpet()[0];
     rules = cesaro_carpet()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Icy Fractal, src: 100hex
@@ -455,7 +455,7 @@ module icy_fractal(n = 3, angle = 90, w = 0.4)
 {
     axiom = icy_fractal()[0];
     rules = icy_fractal()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Heighway's Dragon Curve, src: 100hex
@@ -468,7 +468,7 @@ module heighways_dragon(n = 8, angle = 90, w = 0.4)
 {
     axiom = heighways_dragon()[0];
     rules = heighways_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Polya Sweep, src: 100hex
@@ -481,7 +481,7 @@ module polya_sweep(n = 8, angle = 90, w = 0.4)
 {
     axiom = polya_sweep()[0];
     rules = polya_sweep()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hexagonal Dragon, src: 100hex
@@ -494,7 +494,7 @@ module hexagonal_dragon(n = 5, angle = 60, w = 0.4)
 {
     axiom = hexagonal_dragon()[0];
     rules = hexagonal_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Hexagonal Dragon Estrela, src: 100hex
 function hexagonal_dragon_estrela() = let(      //
@@ -506,7 +506,7 @@ module hexagonal_dragon_estrela(n = 7, angle = 60, w = 0.4)
 {
     axiom = hexagonal_dragon_estrela()[0];
     rules = hexagonal_dragon_estrela()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Twin Dragon, src: 100hex
@@ -519,7 +519,7 @@ module twin_dragon(n = 8, angle = 90, w = 0.4)
 {
     axiom = twin_dragon()[0];
     rules = twin_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Terdragon, src: 100hex
@@ -532,7 +532,7 @@ module terdragon(n = 5, angle = 120, w = 0.4)
 {
     axiom = terdragon()[0];
     rules = terdragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Inverted Terdragon, src: 100hex
@@ -545,7 +545,7 @@ module inverted_terdragon(n = 2, angle = 120, w = 0.4)
 {
     axiom = inverted_terdragon()[0];
     rules = inverted_terdragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Mandelbrot Quartet - Root 5, src: 100hex
@@ -558,7 +558,7 @@ module mandelbrot_quartet(n = 3, angle = 90, w = 0.4)
 {
     axiom = mandelbrot_quartet()[0];
     rules = mandelbrot_quartet()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hilbert Curve, src: 100hex
@@ -571,7 +571,7 @@ module hilbert_curve(n = 5, angle = 90, w = 0.4)
 {
     axiom = hilbert_curve()[0];
     rules = hilbert_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Moore Curve, src: 100hex
@@ -584,7 +584,7 @@ module moore_square2(n = 4, angle = 90, w = 0.4)
 {
     axiom = moore_square2()[0];
     rules = moore_square2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Peano Curve, src: 100hex
@@ -597,7 +597,7 @@ module peano_curve(n = 3, angle = 90, w = 0.4)
 {
     axiom = peano_curve()[0];
     rules = peano_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Gosper Curve, src: 100hex
@@ -610,7 +610,7 @@ module gosper_curve(n = 4, angle = 60, w = 0.4)
 {
     axiom = gosper_curve()[0];
     rules = gosper_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Inner-Flip Gosper Curve, src: 100hex
@@ -627,7 +627,7 @@ module inner_flip_gosper_curve(n = 3, angle = 60, w = 0.4)
 {
     axiom = inner_flip_gosper_curve()[0];
     rules = inner_flip_gosper_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Gosper Curve Tree, src: 100hex
@@ -640,7 +640,7 @@ module gosper_curve_tree(n = 3, angle = 60, w = 0.4)
 {
     axiom = gosper_curve_tree()[0];
     rules = gosper_curve_tree()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Gosper Hex, src: 100hex
@@ -657,7 +657,7 @@ module gosper_hex(n = 4, angle = 30, w = 0.4)
 {
     axiom = gosper_hex()[0];
     rules = gosper_hex()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Quadratic Gosper, src: 100hex
@@ -674,7 +674,7 @@ module quadratic_gosper(n = 3, angle = 90, w = 0.4)
 {
     axiom = quadratic_gosper()[0];
     rules = quadratic_gosper()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Gosper Variation, src: 100hex
 function gosper_variation() = let(                                            //
@@ -686,7 +686,7 @@ module gosper_variation(n = 5, angle = 60, w = 0.4)
 {
     axiom = gosper_variation()[0];
     rules = gosper_variation()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Koch Snowflake Inverted, src: 100hex
@@ -699,7 +699,7 @@ module koch_snowflake_inverted(n = 2, angle = 60, w = 0.4)
 {
     axiom = koch_snowflake_inverted()[0];
     rules = koch_snowflake_inverted()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Reflected Koch, src: 100hex
@@ -712,7 +712,7 @@ module reflected_koch(n = 3, angle = 60, w = 0.4)
 {
     axiom = reflected_koch()[0];
     rules = reflected_koch()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Sierpinski Arrowhead, src: 100hex
@@ -725,7 +725,7 @@ module sierpinski_arrowhead(n = 5, angle = 60, w = 0.4)
 {
     axiom = sierpinski_arrowhead()[0];
     rules = sierpinski_arrowhead()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Sierpinski Arrowhead Hexagon, src: 100hex
@@ -738,7 +738,7 @@ module sierpinski_arrowhead_hexagon(n = 5, angle = 60, w = 0.4)
 {
     axiom = sierpinski_arrowhead_hexagon()[0];
     rules = sierpinski_arrowhead_hexagon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Sierpinski Arrowhead Star, src: 100hex
@@ -751,7 +751,7 @@ module sierpinski_arrowhead_star(n = 4, angle = 60, w = 0.4)
 {
     axiom = sierpinski_arrowhead_star()[0];
     rules = sierpinski_arrowhead_star()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Lace, src: 100hex
@@ -764,7 +764,7 @@ module lace(n = 6, angle = 30, w = 0.4)
 {
     axiom = lace()[0];
     rules = lace()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Lace triangle, src: 100hex
@@ -777,7 +777,7 @@ module lace_triangle(n = 5, angle = 30, w = 0.4)
 {
     axiom = lace_triangle()[0];
     rules = lace_triangle()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Peano curve - root9, src: 100hex
@@ -790,7 +790,7 @@ module peano_curve(n = 2, angle = 90, w = 0.4)
 {
     axiom = peano_curve()[0];
     rules = peano_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Peano round corners, src: 100hex
@@ -803,7 +803,7 @@ module peano_round_corners(n = 3, angle = 45, w = 0.4)
 {
     axiom = peano_round_corners()[0];
     rules = peano_round_corners()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Krishna, src: 100hex
@@ -816,7 +816,7 @@ module krishna(n = 4, angle = 45, w = 0.4)
 {
     axiom = krishna()[0];
     rules = krishna()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Carpet3, src: 100hex
@@ -829,7 +829,7 @@ module carpet3(n = 3, angle = 90, w = 0.4)
 {
     axiom = carpet3()[0];
     rules = carpet3()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Carpet5, src: 100hex
@@ -842,7 +842,7 @@ module carpet5(n = 3, angle = 90, w = 0.4)
 {
     axiom = carpet5()[0];
     rules = carpet5()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Pentaplexity, src: 100hex
@@ -855,7 +855,7 @@ module pentaplexity(n = 4, angle = 36, w = 0.4)
 {
     axiom = pentaplexity()[0];
     rules = pentaplexity()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Pentadendrite, src: 100hex
 function pentadendrite() = let( //
@@ -867,7 +867,7 @@ module pentadendrite(n = 3, angle = 72, w = 0.4)
 {
     axiom = pentadendrite()[0];
     rules = pentadendrite()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // McWorter's Pentigree, src: 100hex
@@ -880,7 +880,7 @@ module mcworters_pentigree(n = 4, angle = 36, w = 0.4)
 {
     axiom = mcworters_pentigree()[0];
     rules = mcworters_pentigree()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // A bush, src: 100hex
@@ -893,7 +893,7 @@ module bush(n = 4, angle = 90, w = 0.4)
 {
     axiom = bush()[0];
     rules = bush()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // X-border2 - Joined Cross Curves, src: 100hex
@@ -906,7 +906,7 @@ module x_border_cross_curves(n = 4, angle = 90, w = 0.4)
 {
     axiom = x_border_cross_curves()[0];
     rules = x_border_cross_curves()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Moore, src: 100hex
@@ -919,7 +919,7 @@ module moore_curve(n = 3, angle = 90, w = 0.4)
 {
     axiom = moore_curve()[0];
     rules = moore_curve()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Pajarita, src: 100hex
@@ -932,7 +932,7 @@ module pajarita(n = 4, angle = 60, w = 0.4)
 {
     axiom = pajarita()[0];
     rules = pajarita()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Estrela4puntas, src: 100hex
@@ -945,7 +945,7 @@ module four_point_stars(n = 3, angle = 45, w = 0.4)
 {
     axiom = four_point_stars()[0];
     rules = four_point_stars()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Cross2, src: 100hex
@@ -958,7 +958,7 @@ module cross2(n = 3, angle = 90, w = 0.4)
 {
     axiom = cross2()[0];
     rules = cross2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Cross3, src: 100hex
@@ -971,7 +971,7 @@ module cross3(n = 2, angle = 90, w = 0.4)
 {
     axiom = cross3()[0];
     rules = cross3()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Mango Leaf, src: 100hex
@@ -984,7 +984,7 @@ module mango_leaf(n = 4, angle = 60, w = 0.4)
 {
     axiom = mango_leaf()[0];
     rules = mango_leaf()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Maple-root9, src: 100hex
@@ -997,7 +997,7 @@ module maple_leaf(n = 3, angle = 60, w = 0.4)
 {
     axiom = maple_leaf()[0];
     rules = maple_leaf()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 // Maple2-root9, src: 100hex
 function maple_leaf2() = let(                              //
@@ -1009,7 +1009,7 @@ module maple_leaf2(n = 2, angle = 60, w = 0.4)
 {
     axiom = maple_leaf2()[0];
     rules = maple_leaf2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangulos4-rosas, src: 100hex
@@ -1022,7 +1022,7 @@ module rose_triangles(n = 4, angle = 60, w = 0.4)
 {
     axiom = rose_triangles()[0];
     rules = rose_triangles()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hexagonos1, src: 100hex
@@ -1035,7 +1035,7 @@ module hexagons(n = 4, angle = 60, w = 0.4)
 {
     axiom = hexagons()[0];
     rules = hexagons()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Hexagonos2-estrelas, src: 100hex
@@ -1048,7 +1048,7 @@ module hexagon_star(n = 3, angle = 60, w = 0.4)
 {
     axiom = hexagon_star()[0];
     rules = hexagon_star()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangulos1-root4, src: 100hex
@@ -1061,7 +1061,7 @@ module triangles_var3(n = 3, angle = 60, w = 0.4)
 {
     axiom = triangles_var3()[0];
     rules = triangles_var3()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangulos2-root4, src: 100hex
@@ -1074,7 +1074,7 @@ module triangles_var4(n = 5, angle = 60, w = 0.4)
 {
     axiom = triangles_var4()[0];
     rules = triangles_var4()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // 5dragon-root5, src: 100hex
@@ -1087,7 +1087,7 @@ module dragon_root(n = 4, angle = 90, w = 0.4)
 {
     axiom = dragon_root()[0];
     rules = dragon_root()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Pinched 5_dragon-root5, src: 100hex
@@ -1100,7 +1100,7 @@ module pinched_dragon_root(n = 4, angle = 90, w = 0.4)
 {
     axiom = pinched_dragon_root()[0];
     rules = pinched_dragon_root()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // 5_Crazy dragon, src: 100hex
@@ -1113,7 +1113,7 @@ module crazy_dragon(n = 4, angle = 90, w = 0.4)
 {
     axiom = crazy_dragon()[0];
     rules = crazy_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // 5_Pine, src: 100hex
@@ -1126,7 +1126,7 @@ module pine_dragon(n = 4, angle = 90, w = 0.4)
 {
     axiom = pine_dragon()[0];
     rules = pine_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Lazo, src: 100hex
@@ -1139,7 +1139,7 @@ module trefoil_knots(n = 7, angle = 60, w = 0.4)
 {
     axiom = trefoil_knots()[0];
     rules = trefoil_knots()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Root8-BrainDragon variant, src: 100hex
@@ -1152,7 +1152,7 @@ module brain_dragon(n = 3, angle = 90, w = 0.4)
 {
     axiom = brain_dragon()[0];
     rules = brain_dragon()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangular grid - root7, src: 100hex
@@ -1165,7 +1165,7 @@ module triangular_grid(n = 3, angle = 60, w = 0.4)
 {
     axiom = triangular_grid()[0];
     rules = triangular_grid()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Sym_7_1-root7, src: 100hex
@@ -1178,7 +1178,7 @@ module triangles_var5(n = 3, angle = 60, w = 0.4)
 {
     axiom = triangles_var5()[0];
     rules = triangles_var5()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // 8Filler-root8, src: 100hex
@@ -1191,7 +1191,7 @@ module octagons(n = 4, angle = 45, w = 0.4)
 {
     axiom = octagons()[0];
     rules = octagons()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangulos-root9, src: 100hex
@@ -1204,7 +1204,7 @@ module triangles_var1(n = 3, angle = 60, w = 0.4)
 {
     axiom = triangles_var1()[0];
     rules = triangles_var1()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Triangulos3-root9, src: 100hex
@@ -1217,7 +1217,7 @@ module triangles_var2(n = 2, angle = 60, w = 0.4)
 {
     axiom = triangles_var2()[0];
     rules = triangles_var2()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // PeanoGosper-root13, src: 100hex
@@ -1230,7 +1230,7 @@ module peano_gosper(n = 2, angle = 90, w = 0.4)
 {
     axiom = peano_gosper()[0];
     rules = peano_gosper()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Gosper-root13, src: 100hex
@@ -1243,7 +1243,7 @@ module gosper_tri(n = 2, angle = 60, w = 0.4)
 {
     axiom = gosper_tri()[0];
     rules = gosper_tri()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // DragonLobulos, src: 100hex
@@ -1256,7 +1256,7 @@ module dragon_lobes(n = 9, angle = 45, w = 0.4)
 {
     axiom = dragon_lobes()[0];
     rules = dragon_lobes()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Carpet6, src: 100hex
@@ -1269,7 +1269,7 @@ module carpet6(n = 2, angle = 90, w = 0.4)
 {
     axiom = carpet6()[0];
     rules = carpet6()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Peano variacion - root9, src: 100hex
@@ -1282,5 +1282,5 @@ module peano_variation1(n = 2, angle = 90, w = 0.4)
 {
     axiom = peano_variation1()[0];
     rules = peano_variation1()[1];
-    L_system2(axiom, rules, n, angle, w);
+    L_System2D(axiom, rules, n, angle, w);
 }
