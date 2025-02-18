@@ -22,7 +22,7 @@ This library allows you to generate space-filling curves and fractal shapes by a
 - `"["`: Saves the current position and heading to the stack.
 - `"]"`: Restores the position and heading from the stack.
 
-If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters in `L_system2`. An extensive range of examples can be found under `examples` folder.
+If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters in `L_System2D`. An extensive range of examples can be found under `examples` folder.
 
 ## Development
 
@@ -35,7 +35,6 @@ If your L-system rules use different symbols than the default "F" for forward or
 
 ### Future Work
 
-- A more concise and flexible method of storing predefined rulesets
 - Attempt at 3D modelling of L Systems
 
 ## Usage
