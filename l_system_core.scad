@@ -1,5 +1,7 @@
 // Core L-system rewriting engine: rule lookup and grammar expansion.
 // Dimension-agnostic; used by the 2D (and future 3D) implementations.
+// Definitions only -- no top-level assignments, echoes, or geometry (this file
+// is included by every interpreter; diamond re-parses must be idempotent).
 
 // --------------------------------
 // Core Functions

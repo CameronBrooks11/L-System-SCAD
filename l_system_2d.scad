@@ -1,4 +1,10 @@
 // L-system based model generator for 2D curves.
+// Definitions only -- no top-level assignments, echoes, or geometry (this file
+// is reached through multiple include paths; every re-parse must be idempotent).
+//
+// Settings ($-special variables, overridable per call or at the consumer's top level):
+//   $ls_rounded (default true)  - round line joints and caps with circles
+//   $ls_debug   (default false) - echo intermediate tables/instructions/coords
 
 include <l_system_core.scad>;
 
@@ -20,6 +26,8 @@ include <l_system_core.scad>;
 module L_System2D(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_chars = "M", heading = 0,
                  startpos = [ 0, 0 ], poly = false)
 {
+    debug = is_undef($ls_debug) ? false : $ls_debug;
+
     // First create the lookup tables for rule replacement
     tables = create_lookup(start, rules, draw_chars, move_chars);
     if (debug)
@@ -39,7 +47,8 @@ module L_System2D(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_c
         polygon(coords); // draw polygon
     else
         segmented_lines(coords, w); // draw lines
-    echo("Done!");
+    if (debug)
+        echo("Done!");
 }
 
 /**
@@ -125,10 +134,11 @@ module segmented_lines(l, w = 0.1)
             line(l[j], l[j + 1], l[j + 2], l[j + 3], w);
         }
     }
+    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
     if (rounded)
     {
         lmax = len(l) - 1;
-        translate([ l[lmax - 1], l[lmax] ]) circle(d = w);
+        translate([ l[lmax - 1], l[lmax] ]) circle(d = w, $fn = $fn > 0 ? $fn : 16);
     }
 }
 
@@ -151,10 +161,11 @@ module line(xa, ya, xb, yb, w = 0.1)
     dy = (yb - ya);
     d = sqrt(dx * dx + dy * dy);
     a = atan2(dy, dx);
+    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
     translate([ xa, ya ])
     {
         if (rounded)
-            circle(d = w);
+            circle(d = w, $fn = $fn > 0 ? $fn : 16);
         rotate([ 0, 0, a ]) translate([ 0, -w / 2 ]) square([ d, w ]);
     }
 }
