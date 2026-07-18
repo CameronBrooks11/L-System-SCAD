@@ -1,4 +1,4 @@
-# L-System-SCAD
+# l-system-scad
 
 An L-system implementation in OpenSCAD. L-systems (Lindenmayer systems) are parallel rewriting systems and a type of formal grammar, commonly used to simulate plant growth and generate fractals.
 
