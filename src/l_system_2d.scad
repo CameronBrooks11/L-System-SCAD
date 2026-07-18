@@ -29,7 +29,7 @@ module L_System2D(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_c
         echo("Instructions:", instrs);
 
     // Generate the coordinates based on the instructions
-    coords = genernate_coords(instrs, angle, startpos, heading, poly, w);
+    coords = generate_coords(instrs, angle, startpos, heading, poly, w);
     if (debug)
         echo("Coords:", coords);
 
@@ -117,7 +117,7 @@ function apply_rules(start, table, final_table,
                               : (n == 1 ? [for (ch = start) for (c2 = final_table[ord(ch)]) c2] : start);
 
 /**
- * genernate_coords
+ * generate_coords
  *
  * Generates a list of coordinates based on instructions.
  * If poly = true, it generates a list of [x, y] coordinates for a polygon.
@@ -134,7 +134,7 @@ function apply_rules(start, table, final_table,
  * @param w          Width of the segments.
  * @return           List of coordinates or line segments based on the poly flag.
  */
-function genernate_coords(instrs, angle, startpos, heading, poly, w) = let(l = len(instrs)) // end let
+function generate_coords(instrs, angle, startpos, heading, poly, w) = let(l = len(instrs)) // end let
     [for (i = 0, ch = instrs[0], pos = startpos,
           newpos = (ch == "F" || ch == "M") ? pos + [ cos(heading), sin(heading) ] : pos,
           heading = (ch == "-")   ? heading - angle
