@@ -18,44 +18,6 @@ module dragon_curve(n = 10, angle = 90, w = 0.4)
     L_System2D(axiom, rules, n, angle, w);
 }
 
-// Twin Dragon
-function twin_dragon() = let(      //
-    axiom = "FX+FX+",              //
-    rules = [ "X=X+YF", "Y=FX-Y" ] //
-    )[axiom, rules];
-
-module twin_dragon(n = 10, angle = 90, w = 0.4)
-{
-    axiom = twin_dragon()[0];
-    rules = twin_dragon()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-// Terdragon
-function terdragon() = let( //
-    axiom = "F",            //
-    rules = ["F=F+F-F"]     //
-    )[axiom, rules];
-
-module terdragon(n = 10, angle = 120, w = 0.4)
-{
-    axiom = terdragon()[0];
-    rules = terdragon()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-
-// Hilbert Curve
-function hilbert_curve() = let(                  //
-    axiom = "A",                                 //
-    rules = [ "A=-BF+AFA+FB-", "B=+AF-BFB-FA+" ] //
-    )[axiom, rules];
-
-module hilbert_curve(n = 4, angle = 90, w = 0.4)
-{
-    axiom = hilbert_curve()[0];
-    rules = hilbert_curve()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-
 // Moore Curve
 function moore_square() = let(                   //
     axiom = "LFL+F+LFL",                         //
@@ -67,32 +29,6 @@ module moore_square(n = 4, angle = 90, w = 0.4)
     axiom = moore_square()[0];
     rules = moore_square()[1];
     L_System2D(axiom, rules, n, angle, w);
-}
-
-// Peano Curve
-function peano_curve() = let(                                        //
-    axiom = "L",                                                     //
-    rules = [ "L=LFRFL-F-RFLFR+F+LFRFL", "R=RFLFR+F+LFRFL-F-RFLFR" ] //
-    )[axiom, rules];
-
-module peano_curve(n = 3, angle = 90, w = 0.4)
-{
-    axiom = peano_curve()[0];
-    rules = peano_curve()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-
-// Gosper Curve
-function gosper_curve() = let(                           //
-    axiom = "A",                                         //
-    rules = [ "A=A-B--B+A++AA+B-", "B=+A-BB--B-A++A+B" ] //
-    )[axiom, rules];
-
-module gosper_curve(n = 4, angle = 60, w = 0.4)
-{
-    axiom = gosper_curve()[0];
-    rules = gosper_curve()[1];
-    L_System2D(axiom, rules, n, angle, w, "AB");
 }
 
 // Levy C Curve
@@ -198,19 +134,6 @@ module sierpinski_triangle(n = 5, angle = 120, w = 0.2)
     L_System2D(axiom, rules, n, angle, w, "FG");
 }
 
-// Sierpinski Arrowhead
-function sierpinski_arrowhead() = let(   //
-    axiom = "XF",                        //
-    rules = [ "X=YF+XF+Y", "Y=XF-YF-X" ] //
-    )[axiom, rules];
-
-module sierpinski_arrowhead(n = 6, angle = 60, w = 0.4)
-{
-    axiom = sierpinski_arrowhead()[0];
-    rules = sierpinski_arrowhead()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-
 // Island Curve
 function island_curve() = let(                                     //
     axiom = "F-F-F-F",                                             //
@@ -240,19 +163,6 @@ module penrose_tiling(n = 2, angle = 36, w = 0.2)
     axiom = penrose_tiling()[0];
     rules = penrose_tiling()[1];
     L_System2D(axiom, rules, n, angle, w, "6789");
-}
-
-// Pentadendrite
-function pentadendrite() = let( //
-    axiom = "F-F-F-F-F",        //
-    rules = ["F=F-F-F++F+F-F"]  //
-    )[axiom, rules];
-
-module pentadendrite(n = 2, angle = 72, w = 0.2)
-{
-    axiom = pentadendrite()[0];
-    rules = pentadendrite()[1];
-    L_System2D(axiom, rules, n, angle, w);
 }
 
 // Icy Pattern
@@ -588,19 +498,6 @@ module moore_square2(n = 4, angle = 90, w = 0.4)
 {
     axiom = moore_square2()[0];
     rules = moore_square2()[1];
-    L_System2D(axiom, rules, n, angle, w);
-}
-
-// Peano Curve, src: 100hex
-function peano_curve() = let(                                        //
-    axiom = "X",                                                     //
-    rules = [ "X=XFYFX-F-YFXFY+F+XFYFX", "Y=YFXFY+F+XFYFX-F-YFXFY" ] //
-    )[axiom, rules];
-
-module peano_curve(n = 3, angle = 90, w = 0.4)
-{
-    axiom = peano_curve()[0];
-    rules = peano_curve()[1];
     L_System2D(axiom, rules, n, angle, w);
 }
 
