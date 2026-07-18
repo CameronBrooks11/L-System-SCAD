@@ -4,6 +4,23 @@
 // is included by every interpreter; diamond re-parses must be idempotent).
 
 // --------------------------------
+// Grammar Tuple Access
+// --------------------------------
+
+/**
+ * _ls_param
+ *
+ * Looks up a key in a grammar tuple's params list ([key, value] pairs),
+ * falling back to a default when the key is absent.
+ *
+ * @param p    List of [key, value] pairs (a grammar tuple's third element).
+ * @param k    Key to look up.
+ * @param d    Default value if the key is absent.
+ * @return     The value for the key, or the default.
+ */
+function _ls_param(p, k, d) = let(m = [for (e = p) if (e[0] == k) e[1]]) len(m) > 0 ? m[0] : d;
+
+// --------------------------------
 // Core Functions
 // --------------------------------
 

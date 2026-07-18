@@ -13,40 +13,62 @@ include <l_system_core.scad>;
  *
  * Generates an L-system based model.
  *
- * @param start        Starting axiom string.
- * @param rules        Array of replacement rules in the form "X=ABC".
+ * Accepts either an explicit axiom string plus rules, or a grammar tuple
+ * [axiom, rules, params] (as returned by the grammars.scad catalog) as the
+ * first argument alone. The tuple's params ([key, value] pairs) supply
+ * per-curve defaults; explicit arguments always win.
+ *
+ * @param start        Starting axiom string, or a grammar tuple [axiom, rules, params].
+ * @param rules        Array of replacement rules in the form "X=ABC" (omit when start is a tuple).
  * @param n            Number of iterations.
- * @param angle        Angle of rotation in degrees.
+ * @param angle        Angle of rotation in degrees (default: 90).
  * @param w            Width of the line segments (default: 0.4).
  * @param draw_chars   Characters interpreted as draw commands (default: "F").
  * @param move_chars   Characters interpreted as move commands (default: "M").
  * @param heading      Initial heading angle in degrees (default: 0).
  * @param startpos     Starting position as [x, y] coordinates (default: [0, 0]).
+ * @param poly         Render as a closed polygon instead of line segments (default: false).
  */
-module L_System2D(start, rules, n, angle = 90, w = 0.4, draw_chars = "F", move_chars = "M", heading = 0,
-                 startpos = [ 0, 0 ], poly = false)
+module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, startpos, poly)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
+    // Grammar tuple dispatch: is_list() is false for the string axiom form
+    p = (is_undef(rules) && is_list(start) && len(start) > 2) ? start[2] : [];
+    _axiom = (is_undef(rules) && is_list(start)) ? start[0] : start;
+    _rules = (is_undef(rules) && is_list(start)) ? start[1] : rules;
+
+    // Explicit argument > tuple param > library default
+    _n = !is_undef(n) ? n : _ls_param(p, "n", undef);
+    _angle = !is_undef(angle) ? angle : _ls_param(p, "angle", 90);
+    _w = !is_undef(w) ? w : _ls_param(p, "w", 0.4);
+    _draw = !is_undef(draw_chars) ? draw_chars : _ls_param(p, "draw_chars", "F");
+    _move = !is_undef(move_chars) ? move_chars : _ls_param(p, "move_chars", "M");
+    _heading = !is_undef(heading) ? heading : _ls_param(p, "heading", 0);
+    _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [ 0, 0 ]);
+    _poly = !is_undef(poly) ? poly : _ls_param(p, "poly", false);
+
+    assert(!is_undef(_n), "L_System2D: n is required (no iteration count given or found in the grammar tuple)");
+
     // First create the lookup tables for rule replacement
-    tables = create_lookup(start, rules, draw_chars, move_chars);
+    tables = create_lookup(_axiom, _rules, _draw, _move);
     if (debug)
         echo("Tables:", tables);
 
     // Apply the rules to generate the final instruction set
-    instrs = apply_rules(start, tables[0], tables[1], n);
+    instrs = apply_rules(_axiom, tables[0], tables[1], _n);
     if (debug)
         echo("Instructions:", instrs);
 
     // Generate the coordinates based on the instructions
-    coords = generate_coords(instrs, angle, startpos, heading, poly, w);
+    coords = generate_coords(instrs, _angle, _startpos, _heading, _poly, _w);
     if (debug)
         echo("Coords:", coords);
 
-    if (poly)
+    if (_poly)
         polygon(coords); // draw polygon
     else
-        segmented_lines(coords, w); // draw lines
+        segmented_lines(coords, _w); // draw lines
     if (debug)
         echo("Done!");
 }
