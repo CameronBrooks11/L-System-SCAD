@@ -1,4 +1,4 @@
-use <../L-Systems.scad>;
+use <../l_systems.scad>;
 
 // ================================
 // Configuration: Select Your Curve

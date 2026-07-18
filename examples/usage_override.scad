@@ -6,7 +6,7 @@ USER_ROUNDED = false; // Disable rounded corners
 USER_FN = 8;          // Set fragment resolution to 8
 USER_DEBUG = true;    // Enable debug mode
 
-include <../L-Systems.scad>;
+include <../l_systems.scad>;
 
 // Lévy Dragon
 module levy_dragon(n = 10, angle = 45, w = 0.4)

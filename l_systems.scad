@@ -17,8 +17,8 @@ debug_verbose =
     is_undef(USER_DEBUG_VERBOSE) ? debug_verbose_default : USER_DEBUG_VERBOSE; // Override verbose debug setting
 
 // Main file to include base library
-include <src/LSystem2D.scad>;
+include <src/l_system_2d.scad>;
 
 // Import all example curves implementations
-include <examples/grammar/lines2d.scad>;
-include <examples/grammar/poly2D.scad>;
+include <examples/grammar/lines_2d.scad>;
+include <examples/grammar/poly_2d.scad>;

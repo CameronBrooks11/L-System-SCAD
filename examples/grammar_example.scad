@@ -1,4 +1,4 @@
-use <../L-Systems.scad>;
+use <../l_systems.scad>;
 
 axiom = moore_square()[0];
 rules = moore_square()[1];
