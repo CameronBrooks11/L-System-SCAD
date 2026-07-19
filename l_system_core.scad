@@ -34,10 +34,12 @@ function _ls_param(p, k, d) = let(m = [for (e = p) if (e[0] == k) e[1]]) len(m) 
  * @param rules        Array of replacement rules.
  * @param draw_chars   Characters interpreted as draw commands.
  * @param move_chars   Characters interpreted as move commands.
+ * @param valid_chars  Turtle symbols the final pass preserves; any other
+ *                     ruleless symbol is stripped (default: the 2D set).
  * @return             Array containing the lookup tables.
  */
-function create_lookup(start, rules, draw_chars, move_chars) =
-    let(valid_chars = "FM-+[]", allchars = str(join(rules), start, valid_chars),
+function create_lookup(start, rules, draw_chars, move_chars, valid_chars = "FM-+[]") =
+    let(allchars = str(join(rules), start, valid_chars),
 
         // Create table of size == max ord character in all rules (<256 for ASCII)
         size = max([for (ch = allchars) if (ch != "=") ord(ch)]) + 1,

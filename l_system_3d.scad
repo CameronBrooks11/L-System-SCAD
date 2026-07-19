@@ -1,0 +1,212 @@
+// L-system based model generator for 3D structures.
+// Definitions only -- no top-level assignments, echoes, or geometry (this file
+// is reached through multiple include paths; every re-parse must be idempotent).
+//
+// ABOP-style 3D turtle. State = position + orthonormal orientation frame
+// [H, L, U] (heading, left, up; H x L = U) carried as a 3x3 row matrix,
+// plus a current line width. Symbols:
+//   F draw forward, M move forward, +/- yaw about U, &/^ pitch about L,
+//   \ / roll about H, | turn around (yaw 180), ! multiply width by taper,
+//   [ ] push/pop [position, frame, width].
+// Default start: origin, heading +Z (H=[0,0,1], L=[0,1,0], U=[-1,0,0]),
+// so a 90-degree pitch-down (&) tips the heading toward +X.
+//
+// Settings ($-special variables, overridable per call or at the consumer's top level):
+//   $ls_rounded (default true)  - sphere joints and end caps on segments
+//   $ls_debug   (default false) - echo intermediate tables/instructions/segments
+
+include <l_system_core.scad>;
+
+// Turtle alphabet understood by the 3D interpreter (passed to create_lookup
+// so rewriting keeps these symbols; the stock 2D set would strip them).
+function _ls3d_valid_chars() = "FM-+[]&^\\/|!";
+
+// Rotation matrices for premultiplying a row-major frame M = [H, L, U]:
+// M' = R * M rotates the frame about its own (local) axis.
+function _rot_u(a) = [ [ cos(a), sin(a), 0 ], [ -sin(a), cos(a), 0 ], [ 0, 0, 1 ] ];
+function _rot_l(a) = [ [ cos(a), 0, -sin(a) ], [ 0, 1, 0 ], [ sin(a), 0, cos(a) ] ];
+function _rot_h(a) = [ [ 1, 0, 0 ], [ 0, cos(a), sin(a) ], [ 0, -sin(a), cos(a) ] ];
+
+// Frame update for one symbol: rotation symbols premultiply, others leave M.
+function _step_rot(ch, a, M) = (ch == "+")   ? _rot_u(a) * M
+                               : (ch == "-") ? _rot_u(-a) * M
+                               : (ch == "&") ? _rot_l(a) * M
+                               : (ch == "^") ? _rot_l(-a) * M
+                               : (ch == "\\") ? _rot_h(a) * M
+                               : (ch == "/") ? _rot_h(-a) * M
+                               : (ch == "|") ? _rot_u(180) * M
+                                             : M;
+
+/**
+ * L_System3D
+ *
+ * Generates an L-system based 3D model.
+ *
+ * Accepts either an explicit axiom string plus rules, or a grammar tuple
+ * [axiom, rules, params] (as returned by the grammars.scad catalog) as the
+ * first argument alone. The tuple's params ([key, value] pairs) supply
+ * per-curve defaults; explicit arguments always win.
+ *
+ * @param start        Starting axiom string, or a grammar tuple [axiom, rules, params].
+ * @param rules        Array of replacement rules in the form "X=ABC" (omit when start is a tuple).
+ * @param n            Number of iterations.
+ * @param angle        Rotation angle in degrees for + - & ^ \ / (default: 90).
+ * @param w            Width (diameter) of the segments (default: 0.4).
+ * @param draw_chars   Characters interpreted as draw commands (default: "F").
+ * @param move_chars   Characters interpreted as move commands (default: "M").
+ * @param startpos     Starting position as [x, y, z] (default: [0, 0, 0]).
+ * @param taper        Width multiplier applied by each "!" (default: 0.7).
+ */
+module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper)
+{
+    debug = is_undef($ls_debug) ? false : $ls_debug;
+
+    // Grammar tuple dispatch: is_list() is false for the string axiom form
+    p = (is_undef(rules) && is_list(start) && len(start) > 2) ? start[2] : [];
+    _axiom = (is_undef(rules) && is_list(start)) ? start[0] : start;
+    _rules = (is_undef(rules) && is_list(start)) ? start[1] : rules;
+
+    // Explicit argument > tuple param > library default
+    _n = !is_undef(n) ? n : _ls_param(p, "n", undef);
+    _angle = !is_undef(angle) ? angle : _ls_param(p, "angle", 90);
+    _w = !is_undef(w) ? w : _ls_param(p, "w", 0.4);
+    _draw = !is_undef(draw_chars) ? draw_chars : _ls_param(p, "draw_chars", "F");
+    _move = !is_undef(move_chars) ? move_chars : _ls_param(p, "move_chars", "M");
+    _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [ 0, 0, 0 ]);
+    _taper = !is_undef(taper) ? taper : _ls_param(p, "taper", 0.7);
+
+    assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
+
+    // First create the lookup tables for rule replacement
+    tables = create_lookup(_axiom, _rules, _draw, _move, _ls3d_valid_chars());
+    if (debug)
+        echo("Tables:", tables);
+
+    // Apply the rules to generate the final instruction set
+    instrs = apply_rules(_axiom, tables[0], tables[1], _n);
+    if (debug)
+        echo("Instructions:", instrs);
+
+    // Walk the turtle to generate the segment list
+    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w);
+    if (debug)
+        echo("Segments:", segs);
+
+    segmented_lines_3d(segs);
+    if (debug)
+        echo("Done!");
+}
+
+/**
+ * generate_coords_3d
+ *
+ * Walks the 3D turtle over an instruction list and returns one
+ * [start, end, width] entry per drawn ("F") segment. The output is a
+ * C-style "for" list comprehension, usable directly (without rendering)
+ * for path-extrusion or analysis workflows.
+ *
+ * @param instrs     Instruction list (single-character strings).
+ * @param angle      Rotation angle in degrees.
+ * @param startpos   Starting position [x, y, z].
+ * @param taper      Width multiplier applied by each "!".
+ * @param w          Initial segment width (diameter).
+ * @return           List of [pa, pb, width] segments.
+ */
+function generate_coords_3d(instrs, angle, startpos, taper, w) =
+    let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
+    [for (i = 0, ch = instrs[0], pos = startpos,
+          newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
+          M = _step_rot(ch, angle, M0),
+          wid = (ch == "!") ? w * taper : w,
+          stack = (ch == "[") ? [[ pos, M0, w ]] : [];
+
+          i < l; // condition
+
+          // update variables (sequential: each sees the ones above)
+          i = i + 1,
+
+          ch = instrs[i], pos = newpos,
+
+          newpos = (ch == "F" || ch == "M") ? newpos + M[0]
+                   : (ch == "]")            ? stack[0][0]
+                                            : newpos,
+
+          M = (ch == "]") ? stack[0][1] : _step_rot(ch, angle, M),
+
+          wid = (ch == "!")   ? wid * taper
+                : (ch == "]") ? stack[0][2]
+                              : wid,
+
+          stack = (ch == "[")   ? concat([[ pos, M, wid ]], stack)
+                  : (ch == "]") ? sublist(stack, 1)
+                                : stack
+
+          ) // end for loop
+
+     if (ch == "F") // only emit drawn segments
+     [ pos, newpos, wid ]];
+
+// --------------------------------
+// Supporting Modules for Drawing
+// --------------------------------
+
+/**
+ * segmented_lines_3d
+ *
+ * Renders a list of [start, end, width] segments as cylinders.
+ *
+ * @param segs   List of [pa, pb, width] segments.
+ */
+module segmented_lines_3d(segs)
+{
+    // OpenSCAD silently skips module for-loops over ranges > 10000 elements
+    // (only a warning, empty geometry), so large segment lists must be
+    // rendered in chunks.
+    limit = 9999;
+    size = len(segs);
+    imax = floor((size - 1) / limit);
+    for (i = [0:1:imax])
+    {
+        jmin = i * limit;
+        jmax = min(jmin + limit - 1, size - 1);
+        for (j = [jmin:1:jmax])
+        {
+            line_3d(segs[j][0], segs[j][1], segs[j][2]);
+        }
+    }
+    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
+    if (rounded && size > 0)
+    {
+        last = segs[size - 1];
+        translate(last[1]) sphere(d = last[2], $fn = $fn > 0 ? $fn : 16);
+    }
+}
+
+/**
+ * line_3d
+ *
+ * Draws a single 3D segment from pa to pb as a cylinder of diameter w,
+ * with a sphere joint at the starting point when 'rounded' is enabled.
+ *
+ * @param pa   Segment start [x, y, z].
+ * @param pb   Segment end [x, y, z].
+ * @param w    Cylinder diameter.
+ */
+module line_3d(pa, pb, w)
+{
+    v = pb - pa;
+    d = norm(v);
+    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
+    fn = $fn > 0 ? $fn : 16;
+    if (d > 0) // guard zero-length segments (repeated points)
+    {
+        b = acos(v.z / d); // inclination from +Z
+        c = atan2(v.y, v.x); // azimuth; atan2(0,0)=0 covers the vertical case
+        translate(pa)
+        {
+            if (rounded)
+                sphere(d = w, $fn = fn);
+            rotate([ 0, b, c ]) cylinder(h = d, d = w, $fn = fn);
+        }
+    }
+}

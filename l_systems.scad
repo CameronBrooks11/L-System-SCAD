@@ -7,4 +7,5 @@
 //   $ls_debug   (default false) - echo intermediate tables/instructions/coords
 
 include <l_system_2d.scad>;
+include <l_system_3d.scad>;
 include <grammars.scad>;
