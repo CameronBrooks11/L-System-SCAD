@@ -19,7 +19,7 @@ include <l_system_core.scad>;
 
 // Turtle alphabet understood by the 3D interpreter (passed to create_lookup
 // so rewriting keeps these symbols; the stock 2D set would strip them).
-function _ls3d_valid_chars() = "FM-+[]&^\\/|!";
+function _ls3d_valid_chars() = "FM-+[]&^\\/|!{}.";
 
 // Rotation matrices for premultiplying a row-major frame M = [H, L, U]:
 // M' = R * M rotates the frame about its own (local) axis.
@@ -74,8 +74,11 @@ function _tropism_bend(M, T, e) =
  *                     [0, 0, -1] for gravity (default: undef, no tropism).
  * @param tropism_strength  Bend susceptibility e in alpha = e*|H x tropism|
  *                     (default: 0.22 when tropism is set).
+ * @param leaf_thickness    Thickness of filled leaf polygons from "{" "." "}"
+ *                     (default: 0.2).
  */
-module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength)
+module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength,
+                 leaf_thickness)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
@@ -94,6 +97,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _taper = !is_undef(taper) ? taper : _ls_param(p, "taper", 0.7);
     _tropism = !is_undef(tropism) ? tropism : _ls_param(p, "tropism", undef);
     _tstrength = !is_undef(tropism_strength) ? tropism_strength : _ls_param(p, "tropism_strength", 0.22);
+    _leaf_t = !is_undef(leaf_thickness) ? leaf_thickness : _ls_param(p, "leaf_thickness", 0.2);
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
@@ -112,7 +116,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     if (debug)
         echo("Segments:", segs);
 
-    segmented_lines_3d(segs);
+    segmented_lines_3d(segs, _leaf_t);
     if (debug)
         echo("Done!");
 }
@@ -132,7 +136,8 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  * @param w          Initial segment width (diameter).
  * @param tropism    Direction the heading bends toward each F step (default: off).
  * @param e          Bend susceptibility (default: 0).
- * @return           List of [pa, pb, width] segments.
+ * @return           Tagged list mixing ["seg", pa, pb, width] line segments and
+ *                   ["leaf", [v0, v1, ...]] filled polygons (from "{" "." "}").
  */
 function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0) =
     let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
@@ -140,7 +145,12 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
           newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
           M = (ch == "F") ? _tropism_bend(M0, tropism, e) : _step_rot(ch, angle, M0),
           wid = (ch == "!") ? w * taper : w,
-          stack = (ch == "[") ? [[ pos, M0, w ]] : [];
+          stack = (ch == "[") ? [[ pos, M0, w ]] : [],
+          // Polygon vertices accumulate between "{" and "}"; the accumulator
+          // is independent of the turtle "[" "]" stack, so vertices recorded
+          // inside a branch persist in the enclosing polygon. "." records a vertex.
+          verts = (ch == ".") ? [startpos] : [],
+          entry = (ch == "F") ? [ "seg", pos, newpos, wid ] : undef;
 
           i < l; // condition
 
@@ -164,12 +174,19 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
 
           stack = (ch == "[")   ? concat([[ pos, M, wid ]], stack)
                   : (ch == "]") ? sublist(stack, 1)
-                                : stack
+                                : stack,
+
+          verts = (ch == "{")   ? []                        // open a new polygon
+                  : (ch == ".") ? concat(verts, [newpos])   // record a vertex
+                                : verts,                     // carry (survives "[" "]")
+
+          entry = (ch == "F")   ? [ "seg", pos, newpos, wid ]
+                  : (ch == "}") ? [ "leaf", verts ]          // emit filled polygon
+                                : undef
 
           ) // end for loop
 
-     if (ch == "F") // only emit drawn segments
-     [ pos, newpos, wid ]];
+     if (!is_undef(entry)) entry];
 
 // --------------------------------
 // Supporting Modules for Drawing
@@ -178,34 +195,84 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
 /**
  * segmented_lines_3d
  *
- * Renders a list of [start, end, width] segments as cylinders.
+ * Renders a tagged geometry list: ["seg", pa, pb, width] entries as cylinders
+ * and ["leaf", [vertices]] entries as filled polygons.
  *
- * @param segs   List of [pa, pb, width] segments.
+ * @param items           Tagged list from generate_coords_3d.
+ * @param leaf_thickness  Thickness of filled leaf polygons (default: 0.2).
  */
-module segmented_lines_3d(segs)
+module segmented_lines_3d(items, leaf_thickness = 0.2)
 {
+    segs = [for (it = items) if (it[0] == "seg") it];
+    leaves = [for (it = items) if (it[0] == "leaf") it[1]];
+
     // OpenSCAD silently skips module for-loops over ranges > 10000 elements
-    // (only a warning, empty geometry), so large segment lists must be
-    // rendered in chunks.
-    limit = 9999;
-    size = len(segs);
-    imax = floor((size - 1) / limit);
-    for (i = [0:1:imax])
-    {
-        jmin = i * limit;
-        jmax = min(jmin + limit - 1, size - 1);
-        for (j = [jmin:1:jmax])
-        {
-            line_3d(segs[j][0], segs[j][1], segs[j][2]);
-        }
-    }
+    // (only a warning, empty geometry), so large lists must be rendered in chunks.
+    _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3]);
+    _chunked(len(leaves)) for (j = $chunk) _leaf(leaves[j], leaf_thickness);
+
     rounded = is_undef($ls_rounded) ? true : $ls_rounded;
-    if (rounded && size > 0)
+    if (rounded && len(segs) > 0)
     {
-        last = segs[size - 1];
-        translate(last[1]) sphere(d = last[2], $fn = $fn > 0 ? $fn : 16);
+        last = segs[len(segs) - 1];
+        translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
     }
 }
+
+/**
+ * _chunked
+ *
+ * Runs its child once per chunk with $chunk set to a <=9999-element index
+ * range, so an arbitrarily long list can be walked without tripping
+ * OpenSCAD's 10000-element for-range cap. The child iterates: for (j = $chunk).
+ *
+ * @param size   Total number of elements to cover.
+ */
+module _chunked(size)
+{
+    limit = 9999;
+    for (c = [0:1:(size > 0 ? floor((size - 1) / limit) : -1)])
+    {
+        $chunk = [c * limit:1:min(c * limit + limit - 1, size - 1)];
+        children();
+    }
+}
+
+/**
+ * _leaf
+ *
+ * Renders a filled polygon through a run of 3D vertices as a thin prism.
+ * The extrusion direction is the Newell-averaged face normal, so the surface
+ * tolerates the not-quite-planar vertex runs a turtle produces.
+ *
+ * @param pts   Polygon vertices [[x,y,z], ...].
+ * @param t     Prism thickness (default: 0.2).
+ */
+module _leaf(pts, t = 0.2)
+{
+    n = len(pts);
+    if (n >= 3)
+    {
+        nx = _sum([for (i = [0:n - 1]) (pts[i].y - pts[(i + 1) % n].y) * (pts[i].z + pts[(i + 1) % n].z)]);
+        ny = _sum([for (i = [0:n - 1]) (pts[i].z - pts[(i + 1) % n].z) * (pts[i].x + pts[(i + 1) % n].x)]);
+        nz = _sum([for (i = [0:n - 1]) (pts[i].x - pts[(i + 1) % n].x) * (pts[i].y + pts[(i + 1) % n].y)]);
+        nr = [ nx, ny, nz ];
+        nm = norm(nr);
+        if (nm > 1e-9) // skip degenerate (collinear) vertex runs
+        {
+            h = nr / nm * t / 2;
+            top = [for (p = pts) p + h];
+            bot = [for (p = pts) p - h];
+            topf = [for (i = [0:n - 1]) i];
+            botf = [for (i = [n - 1:-1:0]) i + n];
+            sides = [for (i = [0:n - 1])[ i, i + n, (i + 1) % n + n, (i + 1) % n ]];
+            polyhedron(points = concat(top, bot), faces = concat([topf], [botf], sides));
+        }
+    }
+}
+
+// Sum of a list of scalars (no builtin sum() in OpenSCAD 2021.01).
+function _sum(v) = len(v) == 0 ? 0 : [for (x = v) 1] * v;
 
 /**
  * line_3d
