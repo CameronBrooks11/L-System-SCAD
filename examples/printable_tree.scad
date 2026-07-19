@@ -4,8 +4,8 @@
 use <../l_systems.scad>;
 
 /* [Tree] */
-// Fork levels: 1 = minimal (6 twigs), 2 = fuller (12), 3+ = bushier
-levels = 1; // [1:4]
+// Fork levels: 1 = minimal, 2 = fuller, 3+ = bushier
+levels = 2; // [1:4]
 // Branch spread angle in degrees: wider = flatter, narrower = taller
 spread_angle = 32; // [15:45]
 // How fast branches thin along their length (lower = finer twigs)
