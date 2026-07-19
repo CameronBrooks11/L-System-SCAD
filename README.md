@@ -28,6 +28,9 @@ This library allows you to generate space-filling curves, fractal shapes, and 3D
 - `"\"` / `"/"`: Roll left / right about the heading (write roll-left as `"\\"` in rule strings).
 - `"|"`: Turn around (yaw 180 degrees).
 - `"!"`: Multiply the current segment width by the `taper` factor (saved/restored by `[` and `]`).
+- `"{"` / `"."` / `"}"`: Open a polygon / record the current position as a vertex / close and fill the polygon. Fills a leaf or petal as a thin surface (thickness set by `leaf_thickness`). One polygon at a time (no nesting); vertices recorded inside `[` `]` branches still belong to the open polygon.
+
+`L_System3D` also supports **tropism** — bending the heading toward a fixed direction after each segment, per ABOP (`alpha = e*|H x T|`). It is set via the `tropism` (direction, e.g. `[0, 0, -1]` for gravity) and `tropism_strength` (`e`) parameters rather than a symbol, and models drooping, climbing, and wind-swept growth.
 
 The 3D turtle starts at the origin heading +Z. If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters. An extensive range of examples can be found under `examples` folder.
 
@@ -51,6 +54,8 @@ use <l-system-scad/l_systems.scad>;
 L_System3D(whorl_tree());                 // tapered 3D tree
 L_System3D(hilbert_curve_3d(), n = 4);    // 3D space-filling curve
 L_System3D(dragon_curve(), w = 0.6);      // 2D grammar as a 3D tube
+L_System3D(weeping_tree());               // gravity tropism (drooping)
+L_System3D(leafy_sprig());                // filled polygon leaves
 ```
 
 Define a custom grammar (the catalog is not needed):
@@ -79,7 +84,7 @@ L_System2D(fractal_plant(), $ls_rounded = true); // per-call override
 - **`l_system_core.scad`** — dimension-agnostic rewriting engine (`create_lookup`, `apply_rules`, helpers). Shared by the 2D and 3D interpreters.
 - **`l_system_2d.scad`** — the 2D turtle interpreter and renderer (`L_System2D`, `generate_coords`, `segmented_lines`, `line`).
 - **`l_system_3d.scad`** — the ABOP-style 3D turtle interpreter and renderer (`L_System3D`, `generate_coords_3d`, `segmented_lines_3d`, `line_3d`). Orientation is an H/L/U frame; segments render as cylinders with optional sphere joints.
-- **`grammars.scad`** — pure-data curve catalog: each curve is a function returning a grammar tuple `[axiom, rules, params]`, where `params` is a list of `[key, value]` pairs carrying the curve's curated defaults (`angle`, `n`, and where non-default: `w`, `draw_chars`, `move_chars`, `heading`, `poly`, `taper`). The same tuples feed both interpreters.
+- **`grammars.scad`** — pure-data curve catalog: each curve is a function returning a grammar tuple `[axiom, rules, params]`, where `params` is a list of `[key, value]` pairs carrying the curve's curated defaults (`angle`, `n`, and where non-default: `w`, `draw_chars`, `move_chars`, `heading`, `poly`, `taper`, `tropism`, `tropism_strength`, `leaf_thickness`). The same tuples feed both interpreters.
 
 Every file contains only definitions (no top-level state), so each is standalone and works identically via `use` or `include`.
 
@@ -87,10 +92,11 @@ Every file contains only definitions (no top-level state), so each is standalone
   - **L_System2D** / **L_System3D**: High-level modules for generating an L-system based model. Both accept `(axiom, rules, ...)` or a grammar tuple.
   - **segmented_lines** / **segmented_lines_3d**: Draw segment lists (chunked; OpenSCAD silently skips module loops over 10000 elements).
   - **line** / **line_3d**: Draw a single segment (2D rectangle / 3D cylinder).
+  - **_leaf**: Draws a filled polygon (leaf/petal) as a thin prism through a run of 3D vertices.
 - **_Functions_**
   - **create_lookup**: Creates lookup tables for rule replacement (optional `valid_chars` selects the preserved turtle alphabet).
   - **apply_rules**: Applies L-system rules recursively.
-  - **generate_coords** / **generate_coords_3d**: Convert instructions into coordinates / `[start, end, width]` segments. `generate_coords_3d` is usable standalone for path-extrusion workflows.
+  - **generate_coords** / **generate_coords_3d**: Convert instructions into coordinates / a tagged list of `["seg", start, end, width]` segments and `["leaf", [vertices]]` polygons. `generate_coords_3d` is usable standalone for path-extrusion workflows.
   - **\_ls_param**: Looks up a key in a grammar tuple's params list.
   - **join**: Efficiently joins lists using a binary tree method.
   - **\_jb**: Recursively joins list elements using a binary split.
@@ -122,6 +128,7 @@ graph TD
 
   segmented_lines --> line
   segmented_lines_3d --> line_3d
+  segmented_lines_3d --> _leaf
 
   join --> _jb
 
@@ -148,8 +155,8 @@ graph TD
 Natural extension points, in their obvious homes (rewriting-level features belong in `l_system_core.scad`, interpretation-level in the interpreter files):
 
 - Stochastic and parametric rules (core)
-- Leaf/polygon surface symbols (`{`, `}`) and color (3D interpreter)
-- Tropism (gravity/light bias on the heading) (3D interpreter)
+- Nested polygons and predefined-surface instancing (the ABOP `~` symbol; note this clashes with Houdini/TouchDesigner, where `~` means a random rotation) (3D interpreter)
+- Per-symbol color (3D interpreter)
 
 ## Notes
 
