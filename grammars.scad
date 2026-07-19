@@ -720,3 +720,37 @@ function fractal_var1() = let(
     rules = [ "X=-YF+XF+XF-", "Y=+FY-FY-FX+", "F=" ],
     params = [ [ "angle", 60 ], [ "n", 5 ], [ "poly", true ] ]
 ) [axiom, rules, params];
+
+// ================================
+// 3D Curves
+// ================================
+// Interpreted by L_System3D. Roll-left is the backslash symbol, which must
+// be escaped as "\\" inside OpenSCAD rule strings.
+
+// 3D Hilbert Curve (Wagon / Dickau)
+function hilbert_curve_3d() = let(
+    axiom = "X",
+    rules = ["X=^\\XF^\\XFX-F^//XFX&F+//XFX-F/X-/"],
+    params = [ [ "angle", 90 ], [ "n", 3 ] ]
+) [axiom, rules, params];
+
+// ABOP Bush (fig. 1.25, simplified: no leaf or color symbols)
+function abop_bush() = let(
+    axiom = "A",
+    rules = [ "A=[&FA]/////[&FA]///////[&FA]", "F=S/////F", "S=F" ],
+    params = [ [ "angle", 22.5 ], [ "n", 6 ], [ "w", 0.3 ] ]
+) [axiom, rules, params];
+
+// Whorl Tree (three tapered branches per level, rolled 120 degrees apart)
+function whorl_tree() = let(
+    axiom = "FA",
+    rules = ["A=!F[&FA]///[&FA]///[&FA]"],
+    params = [ [ "angle", 28 ], [ "n", 6 ], [ "w", 0.5 ], [ "taper", 0.75 ] ]
+) [axiom, rules, params];
+
+// Coral (dense tapered branching dome)
+function coral_3d() = let(
+    axiom = "!FA",
+    rules = ["A=!F[&F!A]//[&F!A]//[&F!A]F!A"],
+    params = [ [ "angle", 25 ], [ "n", 5 ], [ "w", 0.8 ], [ "taper", 0.85 ] ]
+) [axiom, rules, params];
