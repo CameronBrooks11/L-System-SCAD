@@ -4,18 +4,7 @@ use <../l_systems.scad>;
 // Configuration: Select Your Curve
 // ================================
 
-selected_curve = "fractal_var1"; // Change this to test different curves
-
-// Options:
-// "koch_snowflake",
-// "segment_x",
-// "gosper_variation_tree",
-// "koch_snowflake_variant",
-// "square_sierpinski",
-// "x_border_joined_cross_curves",
-// "jaggy_cross",
-// "triangles_var6",
-// "fractal_var1"
+selected_curve = "fractal_var1"; // [koch_snowflake, segment_x, gosper_variation_tree, koch_snowflake_variant, square_sierpinski, x_border_joined_cross_curves, jaggy_cross, triangles_var6, fractal_var1]
 
 // ================================
 // Curve Selection Logic

@@ -5,7 +5,7 @@ use <../l_systems.scad>;
 L_System2D(moore_square());
 
 // Explicit arguments override the tuple's params:
-translate([ 20, 0 ]) L_System2D(moore_square(), n = 4, angle = 80, w = 1);
+translate([ 40, 0 ]) L_System2D(moore_square(), n = 4, angle = 80, w = 1);
 
 // The tuple is plain data: [0] is the axiom, [1] the rules
 echo("moore_square axiom:", moore_square()[0]);
