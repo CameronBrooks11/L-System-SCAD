@@ -98,9 +98,11 @@ function _tropism_bend(M, pos, T, attract, repel, e) =
  * @param attract_points  Points the growth bends toward (default: none).
  * @param repel_points    Points the growth bends away from (default: none).
  *                     Both use tropism_strength as the bend susceptibility.
+ * @param branch_taper    Per-F width multiplier for smooth cone tapering; child
+ *                     branches inherit the parent tip width (default: 1, none).
  */
 module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength,
-                 leaf_thickness, palette, attract_points, repel_points)
+                 leaf_thickness, palette, attract_points, repel_points, branch_taper)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
@@ -123,6 +125,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _palette = !is_undef(palette) ? palette : _ls_param(p, "palette", undef);
     _attract = !is_undef(attract_points) ? attract_points : _ls_param(p, "attract_points", undef);
     _repel = !is_undef(repel_points) ? repel_points : _ls_param(p, "repel_points", undef);
+    _btaper = !is_undef(branch_taper) ? branch_taper : _ls_param(p, "branch_taper", 1);
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
@@ -137,7 +140,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
         echo("Instructions:", instrs);
 
     // Walk the turtle to generate the segment list
-    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w, _tropism, _tstrength, _attract, _repel);
+    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w, _tropism, _tstrength, _attract, _repel, _btaper);
     if (debug)
         echo("Segments:", segs);
 
@@ -163,24 +166,29 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  * @param e          Bend susceptibility (default: 0).
  * @param attract    Points the heading bends toward each F step (default: none).
  * @param repel      Points the heading bends away from each F step (default: none).
- * @return           Tagged list mixing ["seg", pa, pb, width, color_index] line
- *                   segments and ["leaf", [v0, v1, ...], color_index] filled
+ * @param branch_taper  Per-F width multiplier for smooth tapering; each segment
+ *                   is a cone from its entry width to entry*branch_taper, and
+ *                   child branches inherit the parent's tip width (default: 1, none).
+ * @return           Tagged list mixing ["seg", pa, pb, w_start, w_end, color_index]
+ *                   line segments and ["leaf", [v0, v1, ...], color_index] filled
  *                   polygons (from "{" "." "}"). The color index (";" increments,
  *                   "," decrements, saved/restored by "[" "]") is a palette slot.
  */
-function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0, attract = undef, repel = undef) =
+function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0, attract = undef, repel = undef,
+                            branch_taper = 1) =
     let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
     [for (i = 0, ch = instrs[0], pos = startpos,
           newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
           M = (ch == "F") ? _tropism_bend(M0, newpos, tropism, attract, repel, e) : _step_rot(ch, angle, M0),
-          wid = (ch == "!") ? w * taper : w,
+          w0 = w,                                              // width entering the segment
+          wid = (ch == "F") ? w * branch_taper : (ch == "!") ? w * taper : w,
           ci = (ch == ";") ? 1 : (ch == ",") ? -1 : 0,
           stack = (ch == "[") ? [[ pos, M0, w, ci ]] : [],
           // Polygon vertices accumulate between "{" and "}"; the accumulator
           // is independent of the turtle "[" "]" stack, so vertices recorded
           // inside a branch persist in the enclosing polygon. "." records a vertex.
           verts = (ch == ".") ? [startpos] : [],
-          entry = (ch == "F") ? [ "seg", pos, newpos, wid, ci ] : undef;
+          entry = (ch == "F") ? [ "seg", pos, newpos, w0, wid, ci ] : undef;
 
           i < l; // condition
 
@@ -198,7 +206,11 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
               : (ch == "F") ? _tropism_bend(M, newpos, tropism, attract, repel, e)
                             : _step_rot(ch, angle, M),
 
-          wid = (ch == "!")   ? wid * taper
+          w0 = wid,                                          // width entering this segment (before F taper)
+          // F tapers width by branch_taper (so the segment is a cone w0 -> wid,
+          // and child branches inherit the tip width); "!" steps, "]" restores.
+          wid = (ch == "F")   ? wid * branch_taper
+                : (ch == "!") ? wid * taper
                 : (ch == "]") ? stack[0][2]
                               : wid,
 
@@ -216,7 +228,7 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
                   : (ch == ".") ? concat(verts, [newpos])   // record a vertex
                                 : verts,                     // carry (survives "[" "]")
 
-          entry = (ch == "F")   ? [ "seg", pos, newpos, wid, ci ]
+          entry = (ch == "F")   ? [ "seg", pos, newpos, w0, wid, ci ]
                   : (ch == "}") ? [ "leaf", verts, ci ]      // emit filled polygon
                                 : undef
 
@@ -250,24 +262,24 @@ module segmented_lines_3d(items, leaf_thickness = 0.2, palette = undef)
     rounded = is_undef($ls_rounded) ? true : $ls_rounded;
     if (is_undef(palette))
     {
-        // Uncolored path: byte-identical to before color existed.
-        _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3]);
+        // Uncolored path.
+        _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
         _chunked(len(leaves)) for (j = $chunk) _leaf(leaves[j][1], leaf_thickness);
         if (rounded && len(segs) > 0)
         {
             last = segs[len(segs) - 1];
-            translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
+            translate(last[2]) sphere(d = last[4], $fn = $fn > 0 ? $fn : 16);
         }
     }
     else
     {
         n = len(palette);
-        _chunked(len(segs)) for (j = $chunk) color(palette[_pidx(segs[j][4], n)]) line_3d(segs[j][1], segs[j][2], segs[j][3]);
+        _chunked(len(segs)) for (j = $chunk) color(palette[_pidx(segs[j][5], n)]) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
         _chunked(len(leaves)) for (j = $chunk) color(palette[_pidx(leaves[j][2], n)]) _leaf(leaves[j][1], leaf_thickness);
         if (rounded && len(segs) > 0)
         {
             last = segs[len(segs) - 1];
-            color(palette[_pidx(last[4], n)]) translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
+            color(palette[_pidx(last[5], n)]) translate(last[2]) sphere(d = last[4], $fn = $fn > 0 ? $fn : 16);
         }
     }
 }
@@ -333,15 +345,18 @@ function _sum(v) = len(v) == 0 ? 0 : [for (x = v) 1] * v;
 /**
  * line_3d
  *
- * Draws a single 3D segment from pa to pb as a cylinder of diameter w,
- * with a sphere joint at the starting point when 'rounded' is enabled.
+ * Draws a single 3D segment from pa to pb as a cone tapering from diameter w0
+ * at pa to w1 at pb (a plain cylinder when w0 == w1), with a sphere joint at
+ * the starting point when 'rounded' is enabled.
  *
  * @param pa   Segment start [x, y, z].
  * @param pb   Segment end [x, y, z].
- * @param w    Cylinder diameter.
+ * @param w0   Diameter at pa.
+ * @param w1   Diameter at pb (default: w0, i.e. no taper).
  */
-module line_3d(pa, pb, w)
+module line_3d(pa, pb, w0, w1 = undef)
 {
+    we = is_undef(w1) ? w0 : w1;
     v = pb - pa;
     d = norm(v);
     rounded = is_undef($ls_rounded) ? true : $ls_rounded;
@@ -353,8 +368,8 @@ module line_3d(pa, pb, w)
         translate(pa)
         {
             if (rounded)
-                sphere(d = w, $fn = fn);
-            rotate([ 0, b, c ]) cylinder(h = d, d = w, $fn = fn);
+                sphere(d = w0, $fn = fn);
+            rotate([ 0, b, c ]) cylinder(h = d, d1 = w0, d2 = we, $fn = fn);
         }
     }
 }
