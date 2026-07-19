@@ -29,8 +29,15 @@ This library allows you to generate space-filling curves, fractal shapes, and 3D
 - `"|"`: Turn around (yaw 180 degrees).
 - `"!"`: Multiply the current segment width by the `taper` factor (saved/restored by `[` and `]`).
 - `"{"` / `"."` / `"}"`: Open a polygon / record the current position as a vertex / close and fill the polygon. Fills a leaf or petal as a thin surface (thickness set by `leaf_thickness`). One polygon at a time (no nesting); vertices recorded inside `[` `]` branches still belong to the open polygon.
+- `";"` / `","`: Increment / decrement the color index into the `palette` (saved/restored by `[` and `]`). Preview only — see below.
 
-`L_System3D` also supports **tropism** — bending the heading toward a fixed direction after each segment, per ABOP (`alpha = e*|H x T|`). It is set via the `tropism` (direction, e.g. `[0, 0, -1]` for gravity) and `tropism_strength` (`e`) parameters rather than a symbol, and models drooping, climbing, and wind-swept growth.
+`L_System3D` also supports three parameter-driven growth behaviors (no new symbols):
+
+- **Tropism** — bend the heading toward a fixed direction after each segment, per ABOP (`alpha = e*|H x T|`). Set via `tropism` (direction, e.g. `[0, 0, -1]` for gravity) and `tropism_strength` (`e`). Models drooping, climbing, wind-swept growth.
+- **Directed growth** — bend toward `attract_points` and away from `repel_points` (point-based tropism, reusing `tropism_strength`). Models growth toward light or nutrients.
+- **Color** — supply a `palette` (list of colors); the `;` / `,` symbols index into it for per-level or per-branch coloring. **Preview only**: OpenSCAD strips color on F6 render and on STL/AMF/3MF export, so this is a screenshot/documentation feature, not colored fabrication data.
+
+Rules can also be **stochastic**: a rule's right-hand side may be a list of weighted options `["A", [[0.5, "..."], [0.5, "..."]]]` instead of a single `"A=..."` string, and each occurrence picks one at random. Choices are seeded by `$ls_seed` (default 1) so a render is reproducible; change `$ls_seed` for a different structure from the same grammar.
 
 The 3D turtle starts at the origin heading +Z. If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters. An extensive range of examples can be found under `examples` folder.
 
@@ -56,6 +63,23 @@ L_System3D(hilbert_curve_3d(), n = 4);    // 3D space-filling curve
 L_System3D(dragon_curve(), w = 0.6);      // 2D grammar as a 3D tube
 L_System3D(weeping_tree());               // gravity tropism (drooping)
 L_System3D(leafy_sprig());                // filled polygon leaves
+L_System3D(stochastic_tree(), $ls_seed = 3); // random branch patterns
+L_System3D(color_tree());                 // per-level color gradient (preview)
+L_System3D(reaching_tree());              // directed growth toward a point
+```
+
+A stochastic grammar and a directed-growth call written out:
+
+```scad
+use <l-system-scad/l_systems.scad>;
+
+// each "A" randomly grows one of two branch patterns
+L_System3D("FA",
+    [[ "A", [[ 0.5, "!F[&FA]///[&FA]" ], [ 0.5, "!F[&&FA]///[FA]" ]] ]],
+    n = 6, angle = 28, $ls_seed = 7);
+
+// branches bend toward a point above and to the side (like a plant seeking light)
+L_System3D(whorl_tree(), attract_points = [[ 40, 0, 45 ]], tropism_strength = 0.45);
 ```
 
 Define a custom grammar (the catalog is not needed):
@@ -73,17 +97,20 @@ use <l-system-scad/l_systems.scad>;
 
 $ls_rounded = false; // no rounded joints/caps (faster preview)
 $ls_debug = true;    // echo intermediate tables/instructions/coords
+$ls_seed = 5;        // master seed for stochastic rules (default 1)
 $fn = 8;             // cap tessellation (library default: 16)
 
 L_System2D(fractal_plant(), $ls_rounded = true); // per-call override
 ```
+
+Note: OpenSCAD hoists top-level `$`-variable assignments (last one wins for the whole file), so set `$ls_seed` once per file — use a per-call `$ls_seed =` override to render several different stochastic trees in one file.
 
 ### Examples
 
 The `examples/` folder holds runnable, Customizer-ready showcases (pick a curve from the dropdown in OpenSCAD's Customizer, or set `selected_curve`):
 
 - `showcase_lines_2d.scad` / `showcase_poly_2d.scad` — the 2D line and polygon curves.
-- `showcase_3d.scad` — the 3D grammars. **Tropism** is exemplified by the `weeping_tree` option and **filled leaves** by the `leafy_sprig` option; it also renders 2D catalog grammars as 3D tubes.
+- `showcase_3d.scad` — the 3D grammars. Feature exemplars: `weeping_tree` (**tropism**), `leafy_sprig` (**filled leaves**), `stochastic_tree` (**random rules** — vary `$ls_seed`), `color_tree` (**per-level color**), `reaching_tree` (**directed growth**); it also renders 2D catalog grammars as 3D tubes.
 - `usage_simple.scad`, `usage_predefined.scad`, `usage_override.scad` — minimal scripts for a custom grammar, a catalog curve, and the `$ls_*` settings.
 
 ## Architecture
@@ -92,7 +119,7 @@ The `examples/` folder holds runnable, Customizer-ready showcases (pick a curve 
 - **`l_system_core.scad`** — dimension-agnostic rewriting engine (`create_lookup`, `apply_rules`, helpers). Shared by the 2D and 3D interpreters.
 - **`l_system_2d.scad`** — the 2D turtle interpreter and renderer (`L_System2D`, `generate_coords`, `segmented_lines`, `line`).
 - **`l_system_3d.scad`** — the ABOP-style 3D turtle interpreter and renderer (`L_System3D`, `generate_coords_3d`, `segmented_lines_3d`, `line_3d`). Orientation is an H/L/U frame; segments render as cylinders with optional sphere joints.
-- **`grammars.scad`** — pure-data curve catalog: each curve is a function returning a grammar tuple `[axiom, rules, params]`, where `params` is a list of `[key, value]` pairs carrying the curve's curated defaults (`angle`, `n`, and where non-default: `w`, `draw_chars`, `move_chars`, `heading`, `poly`, `taper`, `tropism`, `tropism_strength`, `leaf_thickness`). The same tuples feed both interpreters.
+- **`grammars.scad`** — pure-data curve catalog: each curve is a function returning a grammar tuple `[axiom, rules, params]`, where `params` is a list of `[key, value]` pairs carrying the curve's curated defaults (`angle`, `n`, and where non-default: `w`, `draw_chars`, `move_chars`, `heading`, `poly`, `taper`, `tropism`, `tropism_strength`, `leaf_thickness`, `palette`, `attract_points`, `repel_points`). `rules` entries may be deterministic `"X=ABC"` strings or stochastic `["X", [[weight, "..."], ...]]` lists. The same tuples feed both interpreters.
 
 Every file contains only definitions (no top-level state), so each is standalone and works identically via `use` or `include`.
 
@@ -102,8 +129,8 @@ Every file contains only definitions (no top-level state), so each is standalone
   - **line** / **line_3d**: Draw a single segment (2D rectangle / 3D cylinder).
   - **_leaf**: Draws a filled polygon (leaf/petal) as a thin prism through a run of 3D vertices.
 - **_Functions_**
-  - **create_lookup**: Creates lookup tables for rule replacement (optional `valid_chars` selects the preserved turtle alphabet).
-  - **apply_rules**: Applies L-system rules recursively.
+  - **create_lookup**: Creates lookup tables for rule replacement (optional `valid_chars` selects the preserved turtle alphabet; supports weighted stochastic rules).
+  - **apply_rules**: Applies L-system rules recursively, picking a random production per occurrence for stochastic rules (seeded by `$ls_seed`).
   - **generate_coords** / **generate_coords_3d**: Convert instructions into coordinates / a tagged list of `["seg", start, end, width]` segments and `["leaf", [vertices]]` polygons. `generate_coords_3d` is usable standalone for path-extrusion workflows.
   - **\_ls_param**: Looks up a key in a grammar tuple's params list.
   - **join**: Efficiently joins lists using a binary tree method.
@@ -162,9 +189,10 @@ graph TD
 
 Natural extension points, in their obvious homes (rewriting-level features belong in `l_system_core.scad`, interpretation-level in the interpreter files):
 
-- Stochastic and parametric rules (core)
+- Parametric (parameter-carrying) rules (core)
 - Nested polygons and predefined-surface instancing (the ABOP `~` symbol; note this clashes with Houdini/TouchDesigner, where `~` means a random rotation) (3D interpreter)
-- Per-symbol color (3D interpreter)
+- Distance-weighted attractor falloff for directed growth (3D interpreter)
+- Colored fabrication output (needs a newer OpenSCAD with lazy-union + 3MF materials)
 
 ## Notes
 
