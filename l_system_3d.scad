@@ -37,6 +37,20 @@ function _step_rot(ch, a, M) = (ch == "+")   ? _rot_u(a) * M
                                : (ch == "|") ? _rot_u(180) * M
                                              : M;
 
+// Rodrigues rotation of vector v about unit axis k by angle a (degrees).
+function _rot_about(v, k, a) = v * cos(a) + cross(k, v) * sin(a) + k * (k * v) * (1 - cos(a));
+
+// Tropism: bend the frame toward T by angle e*|H x T| about the axis H x T
+// (ABOP: torque = H cross T, applied after each drawn segment). No effect when
+// tropism is off (T undef / e == 0) or H is parallel to T (zero cross product).
+function _tropism_bend(M, T, e) =
+    (is_undef(T) || e == 0) ? M
+                            : let(axis = cross(M[0], T), m = norm(axis)) //
+                              m < 1e-9 //
+                                  ? M
+                                  : let(k = axis / m, a = e * m) //
+                                    [ _rot_about(M[0], k, a), _rot_about(M[1], k, a), _rot_about(M[2], k, a) ];
+
 /**
  * L_System3D
  *
@@ -56,8 +70,12 @@ function _step_rot(ch, a, M) = (ch == "+")   ? _rot_u(a) * M
  * @param move_chars   Characters interpreted as move commands (default: "M").
  * @param startpos     Starting position as [x, y, z] (default: [0, 0, 0]).
  * @param taper        Width multiplier applied by each "!" (default: 0.7).
+ * @param tropism      Direction the heading bends toward each F step, e.g.
+ *                     [0, 0, -1] for gravity (default: undef, no tropism).
+ * @param tropism_strength  Bend susceptibility e in alpha = e*|H x tropism|
+ *                     (default: 0.22 when tropism is set).
  */
-module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper)
+module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
@@ -74,6 +92,8 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _move = !is_undef(move_chars) ? move_chars : _ls_param(p, "move_chars", "M");
     _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [ 0, 0, 0 ]);
     _taper = !is_undef(taper) ? taper : _ls_param(p, "taper", 0.7);
+    _tropism = !is_undef(tropism) ? tropism : _ls_param(p, "tropism", undef);
+    _tstrength = !is_undef(tropism_strength) ? tropism_strength : _ls_param(p, "tropism_strength", 0.22);
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
@@ -88,7 +108,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
         echo("Instructions:", instrs);
 
     // Walk the turtle to generate the segment list
-    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w);
+    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w, _tropism, _tstrength);
     if (debug)
         echo("Segments:", segs);
 
@@ -110,13 +130,15 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  * @param startpos   Starting position [x, y, z].
  * @param taper      Width multiplier applied by each "!".
  * @param w          Initial segment width (diameter).
+ * @param tropism    Direction the heading bends toward each F step (default: off).
+ * @param e          Bend susceptibility (default: 0).
  * @return           List of [pa, pb, width] segments.
  */
-function generate_coords_3d(instrs, angle, startpos, taper, w) =
+function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0) =
     let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
     [for (i = 0, ch = instrs[0], pos = startpos,
           newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
-          M = _step_rot(ch, angle, M0),
+          M = (ch == "F") ? _tropism_bend(M0, tropism, e) : _step_rot(ch, angle, M0),
           wid = (ch == "!") ? w * taper : w,
           stack = (ch == "[") ? [[ pos, M0, w ]] : [];
 
@@ -131,7 +153,10 @@ function generate_coords_3d(instrs, angle, startpos, taper, w) =
                    : (ch == "]")            ? stack[0][0]
                                             : newpos,
 
-          M = (ch == "]") ? stack[0][1] : _step_rot(ch, angle, M),
+          // F bends the frame by tropism (its _step_rot is identity); "]" restores.
+          M = (ch == "]")   ? stack[0][1]
+              : (ch == "F") ? _tropism_bend(M, tropism, e)
+                            : _step_rot(ch, angle, M),
 
           wid = (ch == "!")   ? wid * taper
                 : (ch == "]") ? stack[0][2]
