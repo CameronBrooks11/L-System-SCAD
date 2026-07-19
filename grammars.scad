@@ -798,11 +798,11 @@ function reaching_tree() = let(
                [ "attract_points", [[ 40, 0, 45 ]] ], [ "tropism_strength", 0.45 ] ]
 ) [axiom, rules, params];
 
-// Printable Tree (radial "3+1" branching with terminal Y-forks; pair with a
-// branch_taper and $ls_rounded=false for smooth tapered cone branches). "!"
-// steps the width down each level; branch_taper cones each segment.
+// Printable Tree (minimal: a trunk, three branches ~120 degrees apart, each
+// forking in two). n adds fork levels (1 = 6 twigs, 2 = 12, ...). Pair with a
+// branch_taper and $ls_rounded=false for smooth tapered cone branches.
 function printable_tree() = let(
-    axiom = "FFFX",
-    rules = ["X=!F[&FF[-F][+F]X]////[&FF[-F][+F]X]////[&FF[-F][+F]X]////!FX"],
-    params = [ [ "angle", 28 ], [ "n", 4 ], [ "w", 4 ], [ "branch_taper", 0.84 ] ]
+    axiom = "!F!F!F[&FFA]////[&FFA]////[&FFA]////",
+    rules = ["A=!FF[&FFA][^FFA]"],
+    params = [ [ "angle", 32 ], [ "n", 1 ], [ "w", 5 ], [ "branch_taper", 0.85 ] ]
 ) [axiom, rules, params];

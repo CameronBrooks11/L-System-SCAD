@@ -4,18 +4,18 @@
 use <../l_systems.scad>;
 
 /* [Tree] */
-// Branching depth: more levels = bushier (and more to print)
-levels = 4; // [2:6]
-// Branch spread angle in degrees: wider = flatter/bushier, narrower = taller
-spread_angle = 28; // [15:45]
+// Fork levels: 1 = minimal (6 twigs), 2 = fuller (12), 3+ = bushier
+levels = 1; // [1:4]
+// Branch spread angle in degrees: wider = flatter, narrower = taller
+spread_angle = 32; // [15:45]
 // How fast branches thin along their length (lower = finer twigs)
-branch_taper = 0.84; // [0.6:0.01:0.95]
+branch_taper = 0.85; // [0.6:0.01:0.95]
 // Trunk diameter at the base
-trunk_width = 4; // [1:0.5:10]
+trunk_width = 5; // [1:0.5:10]
 
 /* [Base] */
 // Diameter of the round base disc
-base_diameter = 14; // [6:40]
+base_diameter = 12; // [6:40]
 // Thickness of the base disc
 base_height = 3; // [1:0.5:8]
 
