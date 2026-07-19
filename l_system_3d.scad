@@ -40,16 +40,32 @@ function _step_rot(ch, a, M) = (ch == "+")   ? _rot_u(a) * M
 // Rodrigues rotation of vector v about unit axis k by angle a (degrees).
 function _rot_about(v, k, a) = v * cos(a) + cross(k, v) * sin(a) + k * (k * v) * (1 - cos(a));
 
-// Tropism: bend the frame toward T by angle e*|H x T| about the axis H x T
-// (ABOP: torque = H cross T, applied after each drawn segment). No effect when
-// tropism is off (T undef / e == 0) or H is parallel to T (zero cross product).
-function _tropism_bend(M, T, e) =
-    (is_undef(T) || e == 0) ? M
-                            : let(axis = cross(M[0], T), m = norm(axis)) //
-                              m < 1e-9 //
-                                  ? M
-                                  : let(k = axis / m, a = e * m) //
-                                    [ _rot_about(M[0], k, a), _rot_about(M[1], k, a), _rot_about(M[2], k, a) ];
+// Directed growth: unit direction the turtle at `pos` should bend toward --
+// the normalized sum of unit vectors toward each attract point and away from
+// each repel point. undef when there is no net influence (empty lists, or
+// cancelling / coincident points).
+function _influence_dir(pos, attract, repel) =
+    let(a = is_undef(attract) ? [] : attract, r = is_undef(repel) ? [] : repel,
+        v = concat([for (p = a) let(d = p - pos, m = norm(d)) if (m > 1e-9) d / m],   // toward attractors
+                   [for (p = r) let(d = pos - p, m = norm(d)) if (m > 1e-9) d / m]))   // away from repellers
+        len(v) == 0 ? undef : let(s = _sum(v), m = norm(s)) m < 1e-9 ? undef : s / m;
+
+// Tropism: bend the frame toward a target direction by angle e*|H x T| about
+// the axis H x T (ABOP: torque = H cross T, applied after each drawn segment).
+// The target sums the fixed tropism vector T and the point-influence direction
+// at `pos`, so fixed tropism and directed growth compose. No effect when e == 0,
+// when there is no net target, or when H is parallel to the target.
+function _tropism_bend(M, pos, T, attract, repel, e) =
+    (e == 0) ? M
+             : let(Tp = _influence_dir(pos, attract, repel),
+                   Ts = (is_undef(T) ? [ 0, 0, 0 ] : T) + (is_undef(Tp) ? [ 0, 0, 0 ] : Tp), nm = norm(Ts)) //
+               nm < 1e-9 //
+                   ? M
+                   : let(Tn = Ts / nm, axis = cross(M[0], Tn), m = norm(axis)) //
+                     m < 1e-9 //
+                         ? M
+                         : let(k = axis / m, a = e * m) //
+                           [ _rot_about(M[0], k, a), _rot_about(M[1], k, a), _rot_about(M[2], k, a) ];
 
 /**
  * L_System3D
@@ -79,9 +95,12 @@ function _tropism_bend(M, T, e) =
  * @param palette      Optional list of colors indexed by the turtle color index
  *                     (";" / "," symbols). Preview only -- OpenSCAD strips color
  *                     on F6 render and STL/3MF export (default: undef, uncolored).
+ * @param attract_points  Points the growth bends toward (default: none).
+ * @param repel_points    Points the growth bends away from (default: none).
+ *                     Both use tropism_strength as the bend susceptibility.
  */
 module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength,
-                 leaf_thickness, palette)
+                 leaf_thickness, palette, attract_points, repel_points)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
@@ -102,6 +121,8 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _tstrength = !is_undef(tropism_strength) ? tropism_strength : _ls_param(p, "tropism_strength", 0.22);
     _leaf_t = !is_undef(leaf_thickness) ? leaf_thickness : _ls_param(p, "leaf_thickness", 0.2);
     _palette = !is_undef(palette) ? palette : _ls_param(p, "palette", undef);
+    _attract = !is_undef(attract_points) ? attract_points : _ls_param(p, "attract_points", undef);
+    _repel = !is_undef(repel_points) ? repel_points : _ls_param(p, "repel_points", undef);
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
@@ -116,7 +137,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
         echo("Instructions:", instrs);
 
     // Walk the turtle to generate the segment list
-    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w, _tropism, _tstrength);
+    segs = generate_coords_3d(instrs, _angle, _startpos, _taper, _w, _tropism, _tstrength, _attract, _repel);
     if (debug)
         echo("Segments:", segs);
 
@@ -138,18 +159,20 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  * @param startpos   Starting position [x, y, z].
  * @param taper      Width multiplier applied by each "!".
  * @param w          Initial segment width (diameter).
- * @param tropism    Direction the heading bends toward each F step (default: off).
+ * @param tropism    Fixed direction the heading bends toward each F step (default: off).
  * @param e          Bend susceptibility (default: 0).
+ * @param attract    Points the heading bends toward each F step (default: none).
+ * @param repel      Points the heading bends away from each F step (default: none).
  * @return           Tagged list mixing ["seg", pa, pb, width, color_index] line
  *                   segments and ["leaf", [v0, v1, ...], color_index] filled
  *                   polygons (from "{" "." "}"). The color index (";" increments,
  *                   "," decrements, saved/restored by "[" "]") is a palette slot.
  */
-function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0) =
+function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0, attract = undef, repel = undef) =
     let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
     [for (i = 0, ch = instrs[0], pos = startpos,
           newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
-          M = (ch == "F") ? _tropism_bend(M0, tropism, e) : _step_rot(ch, angle, M0),
+          M = (ch == "F") ? _tropism_bend(M0, newpos, tropism, attract, repel, e) : _step_rot(ch, angle, M0),
           wid = (ch == "!") ? w * taper : w,
           ci = (ch == ";") ? 1 : (ch == ",") ? -1 : 0,
           stack = (ch == "[") ? [[ pos, M0, w, ci ]] : [],
@@ -170,9 +193,9 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
                    : (ch == "]")            ? stack[0][0]
                                             : newpos,
 
-          // F bends the frame by tropism (its _step_rot is identity); "]" restores.
+          // F bends the frame by tropism/directed growth (_step_rot is identity for F); "]" restores.
           M = (ch == "]")   ? stack[0][1]
-              : (ch == "F") ? _tropism_bend(M, tropism, e)
+              : (ch == "F") ? _tropism_bend(M, newpos, tropism, attract, repel, e)
                             : _step_rot(ch, angle, M),
 
           wid = (ch == "!")   ? wid * taper
