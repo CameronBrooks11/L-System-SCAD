@@ -46,9 +46,11 @@ function create_lookup(start, rules, draw_chars, move_chars, valid_chars = "FM-+
 
         rules_l = [for (rule = rules) rule[0]], // rule 'left' symbol
 
-        rules_r = [for (rule = rules) // rule 'right' symbols
-            assert(rule[1] == "=", str("Invalid rule: ", rule, "\nRules must be in the form 'symbol=replacement'"))
-                substr(rule, 2)],
+        rules_r = [for (rule = rules) // rule 'right' symbols (string, or weighted options)
+            is_list(rule[1])
+                ? _cum(rule[1])
+                : assert(rule[1] == "=", str("Invalid rule: ", rule, "\nRules must be in the form 'symbol=replacement'"))
+                      substr(rule, 2)],
 
         table = [for (i = [0:size]) // rule_i is index of first rule for ch, otherwise undef
                      let(ch = chr(i), rule_i = [for (j = [0:len(rules) - 1]) if (rules_l[j] == ch) j][0]) // end let 2
@@ -56,20 +58,21 @@ function create_lookup(start, rules, draw_chars, move_chars, valid_chars = "FM-+
                      ? ch
                      : rules_r[rule_i]],
 
-        final_rules1 = [for (rule = rules) // rule right symbols
-            assert(rule[1] == "=", str("Invalid rule: ", rule,
-                                       "\nRules must be in the form 'symbol=replacement'"))[rule[0], substr(rule, 2)]],
+        final_rules1 = [for (rule = rules) // rule right symbols (string, or weighted options)
+            is_list(rule[1])
+                ? [ rule[0], _cum(rule[1]) ]
+                : assert(rule[1] == "=", str("Invalid rule: ", rule,
+                                             "\nRules must be in the form 'symbol=replacement'"))[rule[0], substr(rule, 2)]],
 
         final_rules2 =
             [for (ch = valid_chars)[ch, ch]], // use identity rules for valid characters,
                                               // needed because any invalid char will be filtered out in final pass
 
-        final_rules = [for (rule = concat(final_rules1,
-                                          final_rules2))[rule[0], join([for (ch = rule[1]) in_list(draw_chars, ch)
-                                                                            ? "F"
-                                                                            : (in_list(move_chars, ch)    ? "M"
-                                                                               : in_list(valid_chars, ch) ? ch
-                                                                                                          : "")])]],
+        // Normalize replacements to F/M/valid; stochastic options are normalized per option.
+        final_rules = [for (rule = concat(final_rules1, final_rules2))
+                           [ rule[0], is_list(rule[1])
+                                          ? [for (o = rule[1])[ o[0], _norm(o[1], draw_chars, move_chars, valid_chars) ]]
+                                          : _norm(rule[1], draw_chars, move_chars, valid_chars) ]],
         // final table should specify replacements for draw/move, and keep any other valid chars
         // if a draw/move char is a F or M then
         final_table = [for (i = [0:size]) let(ch = chr(i), // rule_i is index of first rule for ch, otherwise undef
@@ -93,10 +96,52 @@ function create_lookup(start, rules, draw_chars, move_chars, valid_chars = "FM-+
  * @param n            Number of iterations.
  * @return             List of single character strings to be processed into coordinates.
  */
+// Indexed over position i so each occurrence gets a position/depth-dependent seed
+// (i*131 + n*977); a stochastic cell (is_list) is picked per occurrence, a
+// deterministic cell (string) is used directly, so deterministic grammars are
+// unaffected (the ternary is lazy: no rands() call on the deterministic path).
 function apply_rules(start, table, final_table,
                      n) = n > 1
-                              ? apply_rules([for (ch = start) for (c2 = table[ord(ch)]) c2], table, final_table, n - 1)
-                              : (n == 1 ? [for (ch = start) for (c2 = final_table[ord(ch)]) c2] : start);
+                              ? apply_rules([for (i = [0:len(start) - 1])
+                                                 let(e = table[ord(start[i])],
+                                                     repl = is_list(e) ? _pick(e, _ls_seed() + i * 131 + n * 977) : e)
+                                                     for (c2 = repl) c2],
+                                            table, final_table, n - 1)
+                              : (n == 1 ? [for (i = [0:len(start) - 1])
+                                               let(e = final_table[ord(start[i])],
+                                                   repl = is_undef(e) ? ""
+                                                          : is_list(e) ? _pick(e, _ls_seed() + i * 131 + n * 977)
+                                                                       : e)
+                                                   for (c2 = repl) c2]
+                                        : start);
+
+// --------------------------------
+// Stochastic Rule Helpers
+// --------------------------------
+// A rule's right-hand side is either a string ("X=ABC", deterministic) or a
+// list of weighted options [[weight, "repl"], ...] (stochastic). is_list()
+// distinguishes them (is_list of a string is false), so deterministic grammars
+// never touch this code and expand exactly as before.
+
+// Master seed for stochastic choices; default keeps renders reproducible.
+function _ls_seed() = is_undef($ls_seed) ? 1 : $ls_seed;
+
+// Sum of option weights for indices 0..k (k < 0 -> 0).
+function _addw(opts, k) = k < 0 ? 0 : opts[k][0] + _addw(opts, k - 1);
+
+// Normalize weighted options into cumulative thresholds paired with replacements:
+// [[w0,r0],[w1,r1],...] -> [[w0/T, r0], [(w0+w1)/T, r1], ...], T = total weight.
+function _cum(opts) = let(total = _addw(opts, len(opts) - 1))
+    [for (k = [0:len(opts) - 1])[ _addw(opts, k) / total, opts[k][1] ]];
+
+// Pick a replacement from cumulative-threshold options using a seeded draw.
+function _pick(opts, seed) = let(r = rands(0, 1, 1, seed)[0], hit = [for (k = [0:len(opts) - 1]) if (r < opts[k][0]) k][0])
+    opts[is_undef(hit) ? len(opts) - 1 : hit][1];
+
+// Normalize a replacement string: map draw/move chars to F/M, keep valid turtle
+// symbols, drop everything else. (Extracted from the create_lookup final pass.)
+function _norm(s, draw_chars, move_chars, valid_chars) =
+    join([for (ch = s) in_list(draw_chars, ch) ? "F" : in_list(move_chars, ch) ? "M" : in_list(valid_chars, ch) ? ch : ""]);
 
 // --------------------------------
 // Helper Functions
