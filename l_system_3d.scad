@@ -19,7 +19,7 @@ include <l_system_core.scad>;
 
 // Turtle alphabet understood by the 3D interpreter (passed to create_lookup
 // so rewriting keeps these symbols; the stock 2D set would strip them).
-function _ls3d_valid_chars() = "FM-+[]&^\\/|!{}.";
+function _ls3d_valid_chars() = "FM-+[]&^\\/|!{}.;,";
 
 // Rotation matrices for premultiplying a row-major frame M = [H, L, U]:
 // M' = R * M rotates the frame about its own (local) axis.
@@ -76,9 +76,12 @@ function _tropism_bend(M, T, e) =
  *                     (default: 0.22 when tropism is set).
  * @param leaf_thickness    Thickness of filled leaf polygons from "{" "." "}"
  *                     (default: 0.2).
+ * @param palette      Optional list of colors indexed by the turtle color index
+ *                     (";" / "," symbols). Preview only -- OpenSCAD strips color
+ *                     on F6 render and STL/3MF export (default: undef, uncolored).
  */
 module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength,
-                 leaf_thickness)
+                 leaf_thickness, palette)
 {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
@@ -98,6 +101,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _tropism = !is_undef(tropism) ? tropism : _ls_param(p, "tropism", undef);
     _tstrength = !is_undef(tropism_strength) ? tropism_strength : _ls_param(p, "tropism_strength", 0.22);
     _leaf_t = !is_undef(leaf_thickness) ? leaf_thickness : _ls_param(p, "leaf_thickness", 0.2);
+    _palette = !is_undef(palette) ? palette : _ls_param(p, "palette", undef);
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
@@ -116,7 +120,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     if (debug)
         echo("Segments:", segs);
 
-    segmented_lines_3d(segs, _leaf_t);
+    segmented_lines_3d(segs, _leaf_t, _palette);
     if (debug)
         echo("Done!");
 }
@@ -136,8 +140,10 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  * @param w          Initial segment width (diameter).
  * @param tropism    Direction the heading bends toward each F step (default: off).
  * @param e          Bend susceptibility (default: 0).
- * @return           Tagged list mixing ["seg", pa, pb, width] line segments and
- *                   ["leaf", [v0, v1, ...]] filled polygons (from "{" "." "}").
+ * @return           Tagged list mixing ["seg", pa, pb, width, color_index] line
+ *                   segments and ["leaf", [v0, v1, ...], color_index] filled
+ *                   polygons (from "{" "." "}"). The color index (";" increments,
+ *                   "," decrements, saved/restored by "[" "]") is a palette slot.
  */
 function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0) =
     let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
@@ -145,12 +151,13 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
           newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
           M = (ch == "F") ? _tropism_bend(M0, tropism, e) : _step_rot(ch, angle, M0),
           wid = (ch == "!") ? w * taper : w,
-          stack = (ch == "[") ? [[ pos, M0, w ]] : [],
+          ci = (ch == ";") ? 1 : (ch == ",") ? -1 : 0,
+          stack = (ch == "[") ? [[ pos, M0, w, ci ]] : [],
           // Polygon vertices accumulate between "{" and "}"; the accumulator
           // is independent of the turtle "[" "]" stack, so vertices recorded
           // inside a branch persist in the enclosing polygon. "." records a vertex.
           verts = (ch == ".") ? [startpos] : [],
-          entry = (ch == "F") ? [ "seg", pos, newpos, wid ] : undef;
+          entry = (ch == "F") ? [ "seg", pos, newpos, wid, ci ] : undef;
 
           i < l; // condition
 
@@ -172,7 +179,13 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
                 : (ch == "]") ? stack[0][2]
                               : wid,
 
-          stack = (ch == "[")   ? concat([[ pos, M, wid ]], stack)
+          // color index: ";" brighter, "," darker into the palette; "]" restores.
+          ci = (ch == ";")   ? ci + 1
+               : (ch == ",") ? ci - 1
+               : (ch == "]") ? stack[0][3]
+                             : ci,
+
+          stack = (ch == "[")   ? concat([[ pos, M, wid, ci ]], stack)
                   : (ch == "]") ? sublist(stack, 1)
                                 : stack,
 
@@ -180,8 +193,8 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
                   : (ch == ".") ? concat(verts, [newpos])   // record a vertex
                                 : verts,                     // carry (survives "[" "]")
 
-          entry = (ch == "F")   ? [ "seg", pos, newpos, wid ]
-                  : (ch == "}") ? [ "leaf", verts ]          // emit filled polygon
+          entry = (ch == "F")   ? [ "seg", pos, newpos, wid, ci ]
+                  : (ch == "}") ? [ "leaf", verts, ci ]      // emit filled polygon
                                 : undef
 
           ) // end for loop
@@ -200,24 +213,44 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
  *
  * @param items           Tagged list from generate_coords_3d.
  * @param leaf_thickness  Thickness of filled leaf polygons (default: 0.2).
+ * @param palette         Optional list of colors indexed by the turtle's color
+ *                        index (preview only; OpenSCAD strips color on F6/export).
+ *                        When undef, geometry is emitted uncolored, unchanged.
  */
-module segmented_lines_3d(items, leaf_thickness = 0.2)
+module segmented_lines_3d(items, leaf_thickness = 0.2, palette = undef)
 {
     segs = [for (it = items) if (it[0] == "seg") it];
-    leaves = [for (it = items) if (it[0] == "leaf") it[1]];
+    leaves = [for (it = items) if (it[0] == "leaf") it];
 
     // OpenSCAD silently skips module for-loops over ranges > 10000 elements
     // (only a warning, empty geometry), so large lists must be rendered in chunks.
-    _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3]);
-    _chunked(len(leaves)) for (j = $chunk) _leaf(leaves[j], leaf_thickness);
-
     rounded = is_undef($ls_rounded) ? true : $ls_rounded;
-    if (rounded && len(segs) > 0)
+    if (is_undef(palette))
     {
-        last = segs[len(segs) - 1];
-        translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
+        // Uncolored path: byte-identical to before color existed.
+        _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3]);
+        _chunked(len(leaves)) for (j = $chunk) _leaf(leaves[j][1], leaf_thickness);
+        if (rounded && len(segs) > 0)
+        {
+            last = segs[len(segs) - 1];
+            translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
+        }
+    }
+    else
+    {
+        n = len(palette);
+        _chunked(len(segs)) for (j = $chunk) color(palette[_pidx(segs[j][4], n)]) line_3d(segs[j][1], segs[j][2], segs[j][3]);
+        _chunked(len(leaves)) for (j = $chunk) color(palette[_pidx(leaves[j][2], n)]) _leaf(leaves[j][1], leaf_thickness);
+        if (rounded && len(segs) > 0)
+        {
+            last = segs[len(segs) - 1];
+            color(palette[_pidx(last[4], n)]) translate(last[2]) sphere(d = last[3], $fn = $fn > 0 ? $fn : 16);
+        }
     }
 }
+
+// Wrap a color index into a palette of length n (handles negatives from ",").
+function _pidx(i, n) = ((i % n) + n) % n;
 
 /**
  * _chunked
