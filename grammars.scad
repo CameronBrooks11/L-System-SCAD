@@ -754,3 +754,18 @@ function coral_3d() = let(
     rules = ["A=!F[&F!A]//[&F!A]//[&F!A]F!A"],
     params = [ [ "angle", 25 ], [ "n", 5 ], [ "w", 0.8 ], [ "taper", 0.85 ] ]
 ) [axiom, rules, params];
+
+// Weeping Tree (whorl branching pulled downward by gravity tropism)
+function weeping_tree() = let(
+    axiom = "FA",
+    rules = ["A=!F[&FA]///[&FA]///[&FA]"],
+    params = [ [ "angle", 28 ], [ "n", 6 ], [ "w", 0.5 ], [ "taper", 0.75 ],
+               [ "tropism", [ 0, 0, -1 ] ], [ "tropism_strength", 0.35 ] ]
+) [axiom, rules, params];
+
+// Leafy Sprig (branching stem tipped with filled polygon leaves)
+function leafy_sprig() = let(
+    axiom = "A",
+    rules = [ "A=FF[&B]/////[&B]/////[&B]", "B=FF[&L]///[&L]FL", "L={.MM+.MM+.MM+.MM+}" ],
+    params = [ [ "angle", 28 ], [ "n", 4 ], [ "w", 0.35 ], [ "leaf_thickness", 0.2 ] ]
+) [axiom, rules, params];

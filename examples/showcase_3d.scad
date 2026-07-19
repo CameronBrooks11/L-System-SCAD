@@ -4,7 +4,7 @@ use <../l_systems.scad>;
 // Configuration: Select Your Curve
 // ================================
 
-selected_curve = "hilbert_curve_3d"; // [hilbert_curve_3d, abop_bush, whorl_tree, coral_3d, hilbert_curve_tube, dragon_curve_tube]
+selected_curve = "hilbert_curve_3d"; // [hilbert_curve_3d, abop_bush, whorl_tree, coral_3d, weeping_tree, leafy_sprig, hilbert_curve_tube, dragon_curve_tube]
 
 // ================================
 // Curve Selection Logic
@@ -24,6 +24,14 @@ else if (selected_curve == "whorl_tree")
 else if (selected_curve == "coral_3d")
 {
     L_System3D(coral_3d(), n = 5); // Recommended n <= 6
+}
+else if (selected_curve == "weeping_tree")
+{
+    L_System3D(weeping_tree(), n = 6); // gravity tropism; Recommended n <= 7
+}
+else if (selected_curve == "leafy_sprig")
+{
+    L_System3D(leafy_sprig(), n = 4); // filled polygon leaves; Recommended n <= 4
 }
 // Grammars are dimension-free data: any 2D curve renders as a 3D tube.
 else if (selected_curve == "hilbert_curve_tube")
