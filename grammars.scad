@@ -769,3 +769,31 @@ function leafy_sprig() = let(
     rules = [ "A=FF[&B]/////[&B]/////[&B]", "B=FF[&L]///[&L]FL", "L={.MM+.MM+.MM+.MM+}" ],
     params = [ [ "angle", 28 ], [ "n", 4 ], [ "w", 0.35 ], [ "leaf_thickness", 0.2 ] ]
 ) [axiom, rules, params];
+
+// Stochastic Tree (each node randomly picks one of three branch patterns;
+// vary $ls_seed for a different tree from the same grammar)
+function stochastic_tree() = let(
+    axiom = "FA",
+    rules = [[ "A", [[ 0.34, "!F[&FA]///[&FA]///[&FA]" ],
+                     [ 0.33, "!F[&FA]//////[&FA]" ],
+                     [ 0.33, "!F[&&FA]///[FA]" ]] ]],
+    params = [ [ "angle", 28 ], [ "n", 6 ], [ "w", 0.5 ], [ "taper", 0.78 ] ]
+) [axiom, rules, params];
+
+// Color Tree (";" advances the palette each level: trunk-to-canopy gradient;
+// preview only -- color is stripped on F6/STL/3MF export)
+function color_tree() = let(
+    axiom = "FA",
+    rules = ["A=;F[&FA]///[&FA]///[&FA]"],
+    params = [ [ "angle", 28 ], [ "n", 6 ], [ "w", 0.5 ], [ "taper", 0.75 ],
+               [ "palette", [ "SaddleBrown", "Peru", "Goldenrod", "OliveDrab", "YellowGreen", "LimeGreen", "GreenYellow" ] ] ]
+) [axiom, rules, params];
+
+// Reaching Tree (directed growth: branches bend toward an attractor point,
+// like a plant growing toward light)
+function reaching_tree() = let(
+    axiom = "FFA",
+    rules = ["A=!F[&FA]///[&FA]///[&FA]"],
+    params = [ [ "angle", 28 ], [ "n", 6 ], [ "w", 0.5 ], [ "taper", 0.75 ],
+               [ "attract_points", [[ 40, 0, 45 ]] ], [ "tropism_strength", 0.45 ] ]
+) [axiom, rules, params];
