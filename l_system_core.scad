@@ -1,212 +1,131 @@
-// Core L-system rewriting engine: rule lookup and grammar expansion.
-// Dimension-agnostic; used by the 2D (and future 3D) implementations.
-// Definitions only -- no top-level assignments, echoes, or geometry (this file
-// is included by every interpreter; diamond re-parses must be idempotent).
+// l_system_core.scad: the rewriting engine shared by the 2D and 3D turtles.
+// Definitions only, so it can be reached through several include paths.
+//
+// A grammar is an axiom string and a list of rules. A rule is either
+// "X=ABC" (X becomes ABC) or ["X", [[weight, "ABC"], [weight, "ABD"], ...]]
+// (X becomes one of the options, chosen at random with the given weights,
+// seeded by $ls_seed so a render is repeatable).
+//
+// Expansion runs in two stages. Every pass but the last replaces each symbol
+// by its rule, or keeps it. The last pass also turns the drawing symbols into
+// F, the moving symbols into M, keeps the turtle's own symbols and drops
+// everything else, so the turtle only ever sees symbols it knows.
 
-// --------------------------------
-// Grammar Tuple Access
-// --------------------------------
+// ---------------- Grammar tuples ----------------
+// A grammar tuple is [axiom, rules, params]; params is a list of [key, value].
+function _ls_param(p, k, d) = let (m = [for (e = p) if (e[0] == k) e[1]]) len(m) > 0 ? m[0] : d;
 
-/**
- * _ls_param
- *
- * Looks up a key in a grammar tuple's params list ([key, value] pairs),
- * falling back to a default when the key is absent.
- *
- * @param p    List of [key, value] pairs (a grammar tuple's third element).
- * @param k    Key to look up.
- * @param d    Default value if the key is absent.
- * @return     The value for the key, or the default.
- */
-function _ls_param(p, k, d) = let(m = [for (e = p) if (e[0] == k) e[1]]) len(m) > 0 ? m[0] : d;
+// ---------------- Small string helpers ----------------
+// Concatenate a list of strings, pairing neighbours each round, so the
+// recursion is only log2(n) deep.
+function _cat(l) =
+  len(l) == 0 ? ""
+  : len(l) == 1 ? l[0]
+  : _cat([for (i = [0:2:len(l) - 1]) i + 1 < len(l) ? str(l[i], l[i + 1]) : l[i]]);
 
-// --------------------------------
-// Core Functions
-// --------------------------------
+// Characters k.. of s, as a string.
+function _from(s, k) = k >= len(s) ? "" : _cat([for (i = [k:len(s) - 1]) s[i]]);
 
+function _contains(s, c) = len([for (x = s) if (x == c) 1]) > 0;
+
+// ---------------- Rules ----------------
+function _rule_lhs(r) = r[0];
+
+// The right-hand side: a string, or for a stochastic rule a list of
+// [cumulative weight in 0..1, string].
+function _rule_rhs(r) =
+  is_list(r[1]) ? _weights_to_steps(r[1])
+  : assert(r[1] == "=", str("Invalid rule: ", r, "\nRules must be in the form 'symbol=replacement'")) _from(r, 2);
+
+function _weights_to_steps(opts) =
+  let (total = [for (o = opts) o[0]] * [for (o = opts) 1])
+  [for (k = [0:len(opts) - 1]) [[for (j = [0:k]) opts[j][0]] * [for (j = [0:k]) 1] / total, opts[k][1]]];
+
+// One option from a stochastic right-hand side, by a seeded draw.
+function _choose(steps, seed) =
+  let (r = rands(0, 1, 1, seed)[0], k = [for (i = [0:len(steps) - 1]) if (r < steps[i][0]) i])
+  steps[len(k) > 0 ? k[0] : len(steps) - 1][1];
+
+function _ls_seed() = is_undef($ls_seed) ? 1 : $ls_seed;
+
+// The last pass's spelling of a replacement: drawing symbols become F, moving
+// symbols M, the turtle's symbols stay, anything else goes.
+function _final_form(s, draw_chars, move_chars, valid_chars) =
+  _cat([for (c = s) _contains(draw_chars, c) ? "F" : _contains(move_chars, c) ? "M" : _contains(valid_chars, c) ? c : ""]);
+
+// ---------------- Lookup tables ----------------
 /**
  * create_lookup
  *
- * Creates lookup tables for every character, then performs array lookup for replacement
- * instead of many ternary statements.
+ * Builds the two tables expansion reads, both indexed by a symbol's code:
+ * [grow, last]. grow[c] is what symbol c becomes on every pass but the last
+ * (its rule, or itself); last[c] is what it becomes on the last pass (its
+ * rule or itself in final form, or undef to drop it). The first rule for a
+ * symbol wins. A stochastic rule's entry is a list of options.
  *
- * @param start        Starting axiom string.
- * @param rules        Array of replacement rules.
- * @param draw_chars   Characters interpreted as draw commands.
- * @param move_chars   Characters interpreted as move commands.
- * @param valid_chars  Turtle symbols the final pass preserves; any other
- *                     ruleless symbol is stripped (default: the 2D set).
- * @return             Array containing the lookup tables.
+ * @param start        Axiom string.
+ * @param rules        Rules, as above.
+ * @param draw_chars   Symbols the turtle draws a segment for (become F).
+ * @param move_chars   Symbols the turtle moves without drawing for (become M).
+ * @param valid_chars  The turtle's own symbols, kept by the last pass
+ *                     (default: the 2D set).
+ * @return             [grow, last].
  */
 function create_lookup(start, rules, draw_chars, move_chars, valid_chars = "FM-+[]") =
-    let(allchars = str(join(rules), start, valid_chars),
+  let (
+    lhs = [for (r = rules) _rule_lhs(r)],
+    rhs = [for (r = rules) _rule_rhs(r)],
+    seen = _cat(concat([for (r = rules) is_list(r[1]) ? str(r[0], _cat([for (o = r[1]) o[1]])) : r], [start, valid_chars])),
+    top = max([for (c = seen) if (c != "=") ord(c)]),
+    rule_for = function(c) let (k = [for (i = [0:len(lhs) - 1]) if (lhs[i] == c) i]) len(k) > 0 ? k[0] : undef,
+    finish = function(x) is_list(x) ? [for (o = x) [o[0], _final_form(o[1], draw_chars, move_chars, valid_chars)]]
+                                    : _final_form(x, draw_chars, move_chars, valid_chars),
+    grow = [for (code = [0:top + 1]) let (c = chr(code), k = rule_for(c)) is_undef(k) ? c : rhs[k]],
+    last = [for (code = [0:top + 1]) let (c = chr(code), k = rule_for(c))
+              !is_undef(k) ? finish(rhs[k]) : _contains(valid_chars, c) ? finish(c) : undef]
+  )
+  [grow, last];
 
-        // Create table of size == max ord character in all rules (<256 for ASCII)
-        size = max([for (ch = allchars) if (ch != "=") ord(ch)]) + 1,
-
-        rules_l = [for (rule = rules) rule[0]], // rule 'left' symbol
-
-        rules_r = [for (rule = rules) // rule 'right' symbols (string, or weighted options)
-            is_list(rule[1])
-                ? _cum(rule[1])
-                : assert(rule[1] == "=", str("Invalid rule: ", rule, "\nRules must be in the form 'symbol=replacement'"))
-                      substr(rule, 2)],
-
-        table = [for (i = [0:size]) // rule_i is index of first rule for ch, otherwise undef
-                     let(ch = chr(i), rule_i = [for (j = [0:len(rules) - 1]) if (rules_l[j] == ch) j][0]) // end let 2
-                     is_undef(rule_i)
-                     ? ch
-                     : rules_r[rule_i]],
-
-        final_rules1 = [for (rule = rules) // rule right symbols (string, or weighted options)
-            is_list(rule[1])
-                ? [ rule[0], _cum(rule[1]) ]
-                : assert(rule[1] == "=", str("Invalid rule: ", rule,
-                                             "\nRules must be in the form 'symbol=replacement'"))[rule[0], substr(rule, 2)]],
-
-        final_rules2 =
-            [for (ch = valid_chars)[ch, ch]], // use identity rules for valid characters,
-                                              // needed because any invalid char will be filtered out in final pass
-
-        // Normalize replacements to F/M/valid; stochastic options are normalized per option.
-        final_rules = [for (rule = concat(final_rules1, final_rules2))
-                           [ rule[0], is_list(rule[1])
-                                          ? [for (o = rule[1])[ o[0], _norm(o[1], draw_chars, move_chars, valid_chars) ]]
-                                          : _norm(rule[1], draw_chars, move_chars, valid_chars) ]],
-        // final table should specify replacements for draw/move, and keep any other valid chars
-        // if a draw/move char is a F or M then
-        final_table = [for (i = [0:size]) let(ch = chr(i), // rule_i is index of first rule for ch, otherwise undef
-                                              rule_i = [for (j = [0:len(final_rules) - 1]) if (final_rules[j][0] == ch)
-                                                  j][0]) // end let 3
-                           is_undef(rule_i)
-                           ? undef
-                           : final_rules[rule_i][1]]) // end let 1
-        [table, final_table];
-
+// ---------------- Expansion ----------------
 /**
  * apply_rules
  *
- * Recursively applies rule replacement using table lookup.
- * Replacement strings are split out into individual characters at each level.
- * Returns a list of single character strings to be processed into coordinates.
+ * Expands the axiom n times and returns the result as a list of
+ * one-character strings. A stochastic symbol picks its option with the seed
+ * $ls_seed + 131 * position + 977 * passes left, so each occurrence draws
+ * independently and the same render always repeats. With n = 0 the axiom is
+ * returned as it is.
  *
- * @param start        Starting axiom string.
- * @param table        Lookup table for rules.
- * @param final_table  Final lookup table for draw/move commands.
- * @param n            Number of iterations.
- * @return             List of single character strings to be processed into coordinates.
+ * @param start        Axiom (string or list of symbols).
+ * @param table        The grow table from create_lookup.
+ * @param final_table  The last table from create_lookup.
+ * @param n            Number of passes.
  */
-// Indexed over position i so each occurrence gets a position/depth-dependent seed
-// (i*131 + n*977); a stochastic cell (is_list) is picked per occurrence, a
-// deterministic cell (string) is used directly, so deterministic grammars are
-// unaffected (the ternary is lazy: no rands() call on the deterministic path).
-function apply_rules(start, table, final_table,
-                     n) = n > 1
-                              ? apply_rules([for (i = [0:len(start) - 1])
-                                                 let(e = table[ord(start[i])],
-                                                     repl = is_list(e) ? _pick(e, _ls_seed() + i * 131 + n * 977) : e)
-                                                     for (c2 = repl) c2],
-                                            table, final_table, n - 1)
-                              : (n == 1 ? [for (i = [0:len(start) - 1])
-                                               let(e = final_table[ord(start[i])],
-                                                   repl = is_undef(e) ? ""
-                                                          : is_list(e) ? _pick(e, _ls_seed() + i * 131 + n * 977)
-                                                                       : e)
-                                                   for (c2 = repl) c2]
-                                        : start);
+function apply_rules(start, table, final_table, n) =
+  n <= 0 ? start
+  : n == 1 ? [for (i = [0:len(start) - 1])
+               let (e = final_table[ord(start[i])])
+               if (!is_undef(e)) for (c = is_list(e) ? _choose(e, _ls_seed() + i * 131 + n * 977) : e) c]
+  : apply_rules([for (i = [0:len(start) - 1])
+                  let (e = table[ord(start[i])])
+                  for (c = is_list(e) ? _choose(e, _ls_seed() + i * 131 + n * 977) : e) c],
+                table, final_table, n - 1);
 
-// --------------------------------
-// Stochastic Rule Helpers
-// --------------------------------
-// A rule's right-hand side is either a string ("X=ABC", deterministic) or a
-// list of weighted options [[weight, "repl"], ...] (stochastic). is_list()
-// distinguishes them (is_list of a string is false), so deterministic grammars
-// never touch this code and expand exactly as before.
+// ---------------- Turtle stacks ----------------
+// The turtles keep their saved states as a linked list [top, rest], so a push
+// or a pop costs the same however deep the branching goes.
+function _push(stack, state) = [state, stack];
+function _top(stack) = stack[0];
+function _pop(stack) = stack[1];
 
-// Master seed for stochastic choices; default keeps renders reproducible.
-function _ls_seed() = is_undef($ls_seed) ? 1 : $ls_seed;
-
-// Sum of option weights for indices 0..k (k < 0 -> 0).
-function _addw(opts, k) = k < 0 ? 0 : opts[k][0] + _addw(opts, k - 1);
-
-// Normalize weighted options into cumulative thresholds paired with replacements:
-// [[w0,r0],[w1,r1],...] -> [[w0/T, r0], [(w0+w1)/T, r1], ...], T = total weight.
-function _cum(opts) = let(total = _addw(opts, len(opts) - 1))
-    [for (k = [0:len(opts) - 1])[ _addw(opts, k) / total, opts[k][1] ]];
-
-// Pick a replacement from cumulative-threshold options using a seeded draw.
-function _pick(opts, seed) = let(r = rands(0, 1, 1, seed)[0], hit = [for (k = [0:len(opts) - 1]) if (r < opts[k][0]) k][0])
-    opts[is_undef(hit) ? len(opts) - 1 : hit][1];
-
-// Normalize a replacement string: map draw/move chars to F/M, keep valid turtle
-// symbols, drop everything else. (Extracted from the create_lookup final pass.)
-function _norm(s, draw_chars, move_chars, valid_chars) =
-    join([for (ch = s) in_list(draw_chars, ch) ? "F" : in_list(move_chars, ch) ? "M" : in_list(valid_chars, ch) ? ch : ""]);
-
-// --------------------------------
-// Helper Functions
-// --------------------------------
-
-/**
- * join
- *
- * Binary tree based join, depth of recursion is log2(n), rather than n for naive join.
- *
- * @param l    List to join.
- * @return     Joined string.
- * @usedby    apply_rules
- */
-function join(l) = let(s = len(l)) // end let
-                           s
-                           > 0
-                       ? _jb(l, 0, s)
-                       : "";
-
-// "join binary", splits list into halves and joins them.
-// l=list, b=begin(inclusive), e=end(exlusive), s=size, m=midpoint
-function _jb(l, b, e) = let(s = e - b, m = floor(b + s / 2)) // end let
-                                s
-                                > 2
-                            ? str(_jb(l, b, m), _jb(l, m, e))
-                        : s == 2 ? str(l[b], l[b + 1])
-                                 : l[b];
-
-/**
- * substr
- *
- * Extracts a substring given begin (inclusive) and end (exclusive).
- * If end is not specified, goes to the end of the string.
- *
- * @param s    String to extract from.
- * @param b    Begin index (inclusive).
- * @param e    End index (exclusive).
- * @return     Extracted substring.
- */
-function substr(s, b, e) = let(e = is_undef(e) || e > len(s) ? len(s) : e) // end let
-                               (b == e)
-                               ? ""
-                               : join([for (i = [b:e - 1]) s[i]]);
-
-/**
- * sublist
- *
- * Extracts a sublist from a list given begin (inclusive) and end (exclusive).
- *
- * @param s    List to extract from.
- * @param b    Begin index (inclusive).
- * @param e    End index (exclusive).
- * @return     Extracted sublist.
- */
-function sublist(s, b, e) = let(e = is_undef(e) || e > len(s) ? len(s) : e) // end let
-    [for (i = [b:1:e - 1]) s[i]];
-
-/**
- * in_list
- *
- * Checks if a value is present in a list (or string).
- *
- * @param l    List or string to search.
- * @param v    Value to find.
- * @return     True if value is in the list, false otherwise.
- */
-function in_list(l, v) = len([for (x = l) if (x == v) x]) > 0;
+// ---------------- Drawing in blocks ----------------
+// Runs its child once per block of at most 9999 indices with $chunk set to
+// the block's range, since a module for-loop over more than 10000 elements
+// draws nothing. The child loops: for (j = $chunk).
+module _chunked(size) {
+  limit = 9999;
+  for (c = [0:1:(size > 0 ? floor((size - 1) / limit) : -1)]) {
+    $chunk = [c * limit:1:min(c * limit + limit - 1, size - 1)];
+    children();
+  }
+}

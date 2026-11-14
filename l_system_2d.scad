@@ -1,193 +1,109 @@
-// L-system based model generator for 2D curves.
-// Definitions only -- no top-level assignments, echoes, or geometry (this file
-// is reached through multiple include paths; every re-parse must be idempotent).
+// l_system_2d.scad: the 2D turtle, drawing an expanded grammar as lines or
+// as a filled polygon. Definitions only.
 //
-// Settings ($-special variables, overridable per call or at the consumer's top level):
-//   $ls_rounded (default true)  - round line joints and caps with circles
-//   $ls_debug   (default false) - echo intermediate tables/instructions/coords
+// Settings ($-special variables, per call or at the top of your file):
+//   $ls_rounded (default true)  - round the line joints and ends
+//   $ls_debug   (default false) - echo the tables, symbols and coordinates
 
 include <l_system_core.scad>;
 
 /**
  * L_System2D
  *
- * Generates an L-system based model.
+ * Draws an L-system in 2D. Pass an axiom and rules, or a grammar tuple
+ * [axiom, rules, params] from grammars.scad alone, whose params give the
+ * defaults; explicit arguments win over them.
  *
- * Accepts either an explicit axiom string plus rules, or a grammar tuple
- * [axiom, rules, params] (as returned by the grammars.scad catalog) as the
- * first argument alone. The tuple's params ([key, value] pairs) supply
- * per-curve defaults; explicit arguments always win.
- *
- * @param start        Starting axiom string, or a grammar tuple [axiom, rules, params].
- * @param rules        Array of replacement rules in the form "X=ABC" (omit when start is a tuple).
- * @param n            Number of iterations.
- * @param angle        Angle of rotation in degrees (default: 90).
- * @param w            Width of the line segments (default: 0.4).
- * @param draw_chars   Characters interpreted as draw commands (default: "F").
- * @param move_chars   Characters interpreted as move commands (default: "M").
- * @param heading      Initial heading angle in degrees (default: 0).
- * @param startpos     Starting position as [x, y] coordinates (default: [0, 0]).
- * @param poly         Render as a closed polygon instead of line segments (default: false).
+ * @param start       Axiom string, or a grammar tuple.
+ * @param rules       Rules (omit with a tuple).
+ * @param n           Number of passes.
+ * @param angle       Turn for + and - in degrees (default 90).
+ * @param w           Line width (default 0.4).
+ * @param draw_chars  Symbols that draw a step (default "F").
+ * @param move_chars  Symbols that move a step without drawing (default "M").
+ * @param heading     Starting direction in degrees (default 0, along +x).
+ * @param startpos    Starting point [x, y] (default [0, 0]).
+ * @param poly        Fill the path as a polygon instead of drawing lines (default false).
  */
-module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, startpos, poly)
-{
-    debug = is_undef($ls_debug) ? false : $ls_debug;
+module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, startpos, poly) {
+  debug = is_undef($ls_debug) ? false : $ls_debug;
+  tuple = is_undef(rules) && is_list(start);
+  p = tuple && len(start) > 2 ? start[2] : [];
+  pick = function(v, k, d) !is_undef(v) ? v : _ls_param(p, k, d);
 
-    // Grammar tuple dispatch: is_list() is false for the string axiom form
-    p = (is_undef(rules) && is_list(start) && len(start) > 2) ? start[2] : [];
-    _axiom = (is_undef(rules) && is_list(start)) ? start[0] : start;
-    _rules = (is_undef(rules) && is_list(start)) ? start[1] : rules;
+  // The assert sits in the assignment so it runs before anything uses n.
+  _n = let (v = pick(n, "n", undef))
+    assert(!is_undef(v), "L_System2D: n is required (no iteration count given or found in the grammar tuple)") v;
+  _angle = pick(angle, "angle", 90);
+  _w = pick(w, "w", 0.4);
+  _poly = pick(poly, "poly", false);
 
-    // Explicit argument > tuple param > library default
-    _n = !is_undef(n) ? n : _ls_param(p, "n", undef);
-    _angle = !is_undef(angle) ? angle : _ls_param(p, "angle", 90);
-    _w = !is_undef(w) ? w : _ls_param(p, "w", 0.4);
-    _draw = !is_undef(draw_chars) ? draw_chars : _ls_param(p, "draw_chars", "F");
-    _move = !is_undef(move_chars) ? move_chars : _ls_param(p, "move_chars", "M");
-    _heading = !is_undef(heading) ? heading : _ls_param(p, "heading", 0);
-    _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [ 0, 0 ]);
-    _poly = !is_undef(poly) ? poly : _ls_param(p, "poly", false);
+  tables = create_lookup(tuple ? start[0] : start, tuple ? start[1] : rules, pick(draw_chars, "draw_chars", "F"),
+                         pick(move_chars, "move_chars", "M"));
+  if (debug) echo("Tables:", tables);
+  instrs = apply_rules(tuple ? start[0] : start, tables[0], tables[1], _n);
+  if (debug) echo("Instructions:", instrs);
+  coords = generate_coords(instrs, _angle, pick(startpos, "startpos", [0, 0]), pick(heading, "heading", 0), _poly, _w);
+  if (debug) echo("Coords:", coords);
 
-    assert(!is_undef(_n), "L_System2D: n is required (no iteration count given or found in the grammar tuple)");
-
-    // First create the lookup tables for rule replacement
-    tables = create_lookup(_axiom, _rules, _draw, _move);
-    if (debug)
-        echo("Tables:", tables);
-
-    // Apply the rules to generate the final instruction set
-    instrs = apply_rules(_axiom, tables[0], tables[1], _n);
-    if (debug)
-        echo("Instructions:", instrs);
-
-    // Generate the coordinates based on the instructions
-    coords = generate_coords(instrs, _angle, _startpos, _heading, _poly, _w);
-    if (debug)
-        echo("Coords:", coords);
-
-    if (_poly)
-        polygon(coords); // draw polygon
-    else
-        segmented_lines(coords, _w); // draw lines
-    if (debug)
-        echo("Done!");
+  if (_poly) polygon(coords);
+  else segmented_lines(coords, _w);
+  if (debug) echo("Done!");
 }
 
 /**
  * generate_coords
  *
- * Generates a list of coordinates based on instructions.
- * If poly = true, it generates a list of [x, y] coordinates for a polygon.
- * If poly = false, it generates a flat list where every consecutive 4 numbers represent a line segment.
- * This doubles the output size necessary in most cases, but supports M (move without drawing) commands.
- * The output is a C-style "for" list comprehension.
+ * Walks the turtle along the symbols, one unit per F or M step. With
+ * poly = false, returns a flat list holding four numbers [xa, ya, xb, yb] for
+ * each F; with poly = true, the point each F starts from, for polygon().
  *
- * @param instrs     Instructions for generating coordinates.
- * @param l          Length of segments.
- * @param angle      Angle for turning.
- * @param startpos   Starting position for the first segment.
- * @param heading    Heading (orientation) of the first segment.
- * @param poly       Flag to determine if output should be polygonal or flat.
- * @param w          Width of the segments.
- * @return           List of coordinates or line segments based on the poly flag.
+ * @param instrs    Expanded symbols.
+ * @param angle     Turn for + and - in degrees.
+ * @param startpos  Starting point [x, y].
+ * @param heading   Starting direction in degrees.
+ * @param poly      Return polygon points instead of line segments.
+ * @param w         Unused; kept for existing callers.
  */
-function generate_coords(instrs, angle, startpos, heading, poly, w) = let(l = len(instrs)) // end let
-    [for (i = 0, ch = instrs[0], pos = startpos,
-          newpos = (ch == "F" || ch == "M") ? pos + [ cos(heading), sin(heading) ] : pos,
-          heading = (ch == "-")   ? heading - angle
-                    : (ch == "+") ? heading + angle
-                                  : heading,
-          stack = (ch == "[") ? [[pos, heading]] : [];
+// The turtle is its position p, heading h, unit step d along h, and saved
+// states st, for the current symbol c. Each step updates them in that order,
+// so "]" restores p and h before popping st, and d is only recomputed when h
+// changes.
+function generate_coords(instrs, angle, startpos, heading, poly, w) =
+  let (n = len(instrs))
+  [for (i = 0, c = instrs[0], p = startpos, h = heading, d = [cos(heading), sin(heading)], st = []; i < n;
+        p = c == "F" || c == "M" ? p + d : c == "]" ? _top(st)[0] : p,
+        h = c == "+" ? h + angle : c == "-" ? h - angle : c == "]" ? _top(st)[1] : h,
+        d = c == "+" || c == "-" || c == "]" ? [cos(h), sin(h)] : d,
+        st = c == "[" ? _push(st, [p, h]) : c == "]" ? _pop(st) : st,
+        i = i + 1, c = instrs[i])
+    if (c == "F") each (poly ? [p] : let (q = p + d) [p.x, p.y, q.x, q.y])];
 
-          i < l; // condition
-
-          // update variables
-          i = i + 1,
-
-          ch = instrs[i], pos = newpos,
-
-          newpos = (ch == "F" || ch == "M") ? newpos + [ cos(heading), sin(heading) ]
-                   : (ch == "]")            ? stack[0][0]
-                                            : newpos,
-
-          heading = (ch == "-")   ? heading - angle
-                    : (ch == "+") ? heading + angle
-                    : (ch == "]") ? stack[0][1]
-                                  : heading,
-
-          stack = (ch == "[")   ? concat([[pos, heading]], stack)
-                  : (ch == "]") ? sublist(stack, 1)
-                                : stack
-
-          //,_=echo(ch,pos,newpos,heading,stack)
-          ) // end for loop
-
-     if (ch == "F") // only draw if F command
-     if (poly) pos  // for polygon return only the position [x,y]
-     else           // otherwise return the line segment [xa,ya,xb,yb]
-     for (x = [ pos[0], pos[1], newpos[0], newpos[1] ]) x];
-
-// --------------------------------
-// Supporting Modules for Drawing
-// --------------------------------
+// ---------------- Drawing ----------------
 
 /**
  * segmented_lines
  *
- * Works on long lists of "lines" which are specified as a flat list of numbers,
- * each 4 representing a single line: [xa,ya,xb,yb,...]
- *
- * @param l    Flat list of line segments.
- * @param w    Width of the lines (default: 0.1).
+ * Draws the flat [xa, ya, xb, yb, ...] list from generate_coords: each
+ * segment as a bar of width w, with a round joint at its start and a round
+ * end on the last when $ls_rounded is on.
  */
-module segmented_lines(l, w = 0.1)
-{
-    // OpenSCAD doesn't allow ranges > 10000 in modules,
-    // so limit is used to split very large segmented lines into manageable chunks
-    limit = 9999 * 4;
-    size = len(l);
-    imax = floor((size - 1) / limit);
-    for (i = [0:1:imax])
-    {
-        jmin = i * limit;
-        jmax = min(jmin + limit - 1, size - 1);
-        for (j = [jmin:4:jmax])
-        {
-            line(l[j], l[j + 1], l[j + 2], l[j + 3], w);
-        }
-    }
-    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
-    if (rounded)
-    {
-        lmax = len(l) - 1;
-        translate([ l[lmax - 1], l[lmax] ]) circle(d = w, $fn = $fn > 0 ? $fn : 16);
-    }
+module segmented_lines(l, w = 0.1) {
+  count = floor(len(l) / 4);
+  _chunked(count) for (j = $chunk) line(l[4 * j], l[4 * j + 1], l[4 * j + 2], l[4 * j + 3], w);
+  if ((is_undef($ls_rounded) ? true : $ls_rounded) && count > 0)
+    translate([l[4 * count - 2], l[4 * count - 1]]) circle(d = w, $fn = $fn > 0 ? $fn : 16);
 }
 
 /**
  * line
  *
- * Draws a single line segment from (xa, ya) to (xb, yb) with width w.
- * Optionally adds a circle at the starting point if 'rounded' is true.
- *
- * @param xa   Starting x-coordinate.
- * @param ya   Starting y-coordinate.
- * @param xb   Ending x-coordinate.
- * @param yb   Ending y-coordinate.
- * @param w    Width of the line (default: 0.1).
+ * One bar of width w from (xa, ya) to (xb, yb), with a round joint at its
+ * start when $ls_rounded is on.
  */
-module line(xa, ya, xb, yb, w = 0.1)
-{
-    // echo(xa,ya,xb,yb);
-    dx = (xb - xa);
-    dy = (yb - ya);
-    d = sqrt(dx * dx + dy * dy);
-    a = atan2(dy, dx);
-    rounded = is_undef($ls_rounded) ? true : $ls_rounded;
-    translate([ xa, ya ])
-    {
-        if (rounded)
-            circle(d = w, $fn = $fn > 0 ? $fn : 16);
-        rotate([ 0, 0, a ]) translate([ 0, -w / 2 ]) square([ d, w ]);
-    }
+module line(xa, ya, xb, yb, w = 0.1) {
+  translate([xa, ya]) {
+    if (is_undef($ls_rounded) ? true : $ls_rounded) circle(d = w, $fn = $fn > 0 ? $fn : 16);
+    rotate(atan2(yb - ya, xb - xa)) translate([0, -w / 2]) square([norm([xb - xa, yb - ya]), w]);
+  }
 }

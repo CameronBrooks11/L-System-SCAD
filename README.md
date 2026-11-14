@@ -4,14 +4,22 @@ An L-system implementation in OpenSCAD. L-systems (Lindenmayer systems) are para
 
 ## Overview
 
-This library allows you to generate space-filling curves, fractal shapes, and 3D structures (plants, trees, corals, space-filling sculptures) by applying recursive replacement rules. The core functions have been optimized, significantly improving speed and reducing memory usage. New features such as support for the "M" move without drawing and position saving and restoring with "[" and "]" have also been added.
+This library allows you to generate space-filling curves, fractal shapes, and 3D structures (plants, trees, corals, space-filling sculptures) by applying recursive replacement rules.
+
+| | | |
+| --- | --- | --- |
+| ![Dragon curve](images/dragon_curve.png) | ![Fractal plant](images/fractal_plant.png) | ![3D Hilbert curve](images/hilbert_curve_3d.png) |
+| `dragon_curve` | `fractal_plant` | `hilbert_curve_3d` |
+| ![Tree with a per-level colour gradient](images/color_tree.png) | ![Weeping tree under gravity tropism](images/weeping_tree.png) | ![Printable tree on a base](images/printable_tree.png) |
+| `color_tree` | `weeping_tree` | `examples/printable_tree.scad` |
 
 ### Key Features
 
 - **L-system functionality**: Create fractals and space-filling curves using recursive rule-based transformations.
-- **Optimized core functions**: The library has been completely rewritten, now using half the memory and twice the speed of previous versions.
+- **2D and 3D turtles**: the same grammar draws as 2D lines, a filled polygon, or 3D tubes, branches and leaves.
 - **Turtle graphics support**: Movement operations include forward drawing ("F"), move without drawing ("M"), and rotation ("+" and "-").
 - **Position saving and restoring**: Use "[" and "]" to save and restore the turtle's position and orientation during rule application.
+- **A catalog of over 100 grammars**: fractal curves, tilings, plants and 3D trees, each with tuned defaults.
 
 ## Operations Supported
 
@@ -131,15 +139,10 @@ Every file contains only definitions (no top-level state), so each is standalone
   - **line** / **line_3d**: Draw a single segment (2D rectangle / 3D cylinder).
   - **_leaf**: Draws a filled polygon (leaf/petal) as a thin prism through a run of 3D vertices.
 - **_Functions_**
-  - **create_lookup**: Creates lookup tables for rule replacement (optional `valid_chars` selects the preserved turtle alphabet; supports weighted stochastic rules).
-  - **apply_rules**: Applies L-system rules recursively, picking a random production per occurrence for stochastic rules (seeded by `$ls_seed`).
+  - **create_lookup**: Builds the two symbol tables expansion reads: what each symbol becomes on every pass but the last, and on the last pass, where drawing symbols become `F`, moving symbols `M`, the turtle's own symbols stay and the rest are dropped (optional `valid_chars` selects the turtle alphabet; supports weighted stochastic rules).
+  - **apply_rules**: Expands the axiom n times, picking a random production per occurrence for stochastic rules (seeded by `$ls_seed`).
   - **generate_coords** / **generate_coords_3d**: Convert instructions into coordinates / a tagged list of `["seg", start, end, width]` segments and `["leaf", [vertices]]` polygons. `generate_coords_3d` is usable standalone for path-extrusion workflows.
   - **\_ls_param**: Looks up a key in a grammar tuple's params list.
-  - **join**: Efficiently joins lists using a binary tree method.
-  - **\_jb**: Recursively joins list elements using a binary split.
-  - **substr**: Extracts a substring from a string.
-  - **sublist**: Extracts a sublist from a list.
-  - **in_list**: Checks if a value exists in a list.
 
 ```mermaid
 graph TD
@@ -155,19 +158,9 @@ graph TD
   L_System3D --> generate_coords_3d
   L_System3D --> segmented_lines_3d
 
-  create_lookup --> substr
-  create_lookup --> in_list
-  create_lookup --> join
-
-  substr --> join
-  generate_coords --> sublist
-  generate_coords_3d --> sublist
-
   segmented_lines --> line
   segmented_lines_3d --> line_3d
   segmented_lines_3d --> _leaf
-
-  join --> _jb
 
   create_lookup -.-> apply_rules
   apply_rules -.-> generate_coords
@@ -182,10 +175,9 @@ graph TD
 
 - **Pure-data grammar catalog**: predefined curves are now plain functions returning `[axiom, rules, params]` tuples; the per-curve wrapper modules were removed. `dragon_curve(n = 12)` becomes `L_System2D(dragon_curve(), n = 12)`.
 - **`$ls_*` settings**: the `USER_ROUNDED`/`USER_FN`/`USER_DEBUG` include-only override pattern was replaced by dynamically scoped `$ls_rounded`/`$ls_debug` special variables that also work through `use` and per call. The library no longer sets `$fn` globally.
-- **New operations**: The library now supports the `"M"` move without drawing and position-saving/position-restoring brackets (`[` and `]`).
-- **Performance improvements**: The core functions have been optimized for speed and memory efficiency, offering better performance for larger iterations.
-- **Rule format update**: Rules are now simpler and more flexible, taking the form of a single string per rule, e.g., `"X=ABC"`.
-- **Expanded examples**: Large number of new example curves and models were added to demonstrate the added features.
+- **Rewritten engine and turtles**: the rewriting engine and both turtle walks are new code, MIT-licensed. Every catalog grammar expands and draws exactly as before (see Checks). The turtles keep saved states as a linked list, so a push or pop costs the same at any depth. The string helpers `join`, `substr`, `sublist` and `in_list` are gone.
+- **3D turtle**: `L_System3D`, with tropism, directed growth, leaves, colour and tapered branches.
+- **Stochastic rules**: weighted, seeded, repeatable.
 
 ### Future Work
 
@@ -214,7 +206,23 @@ The 3D turtle, tropism, and leaf/polygon features follow the canonical L-system 
 - The 3D Hilbert curve grammar (`hilbert_curve_3d`) is from Stan Wagon, _Mathematica in Action_ (1991), as tabulated by Robert Dickau, [3-D L-Systems](http://www.robertdickau.com/lsys3d.html).
 - The 3D turtle symbol alphabet was cross-checked against the [Houdini L-System SOP](https://www.sidefx.com/docs/houdini/nodes/sop/lsystem.html) and [TouchDesigner LSystem SOP](https://docs.derivative.ca/LSystem_SOP) documentation. Note the `~` symbol clash: ABOP uses it for predefined-surface instancing, while Houdini/TouchDesigner use it for random reorientation.
 
+## Checks
+
+`just test` takes about 11 s on OpenSCAD 2026.10.15. It checks:
+
+- segment counts that follow from the rules: the dragon curve has 2^n segments, the Hilbert curve 4^n − 1, the Koch snowflake 3·4^n points;
+- the turtle closing a square, returning from nested branches, and moving without drawing;
+- symbol mapping, the first rule for a symbol winning, and stochastic rules repeating for a seed, changing with it and drawing in proportion to their weights;
+- the 3D turtle: unit steps however the frame turns, pitch direction, tropism, branch taper and leaves;
+- every grammar in the catalog, through both turtles, against its fingerprint in `tests/fingerprints.txt` (`just fingerprints` rewrites it after an intended change);
+- every example file evaluating without warnings, and malformed input stopping with its message.
+
+`just images` renders the pictures above.
+
 ## Acknowledgment
 
-This is an extension and modularized version of [L-system OpenSCAD Library by Hans Loeblich](https://gist.github.com/thehans/a1494db8046a58832e2ebb10a5908a66).
-I would like to express my gratitude to Hans for his invaluable contributions to the OpenSCAD community which have been instrumental in shaping many of my own libraries and designs in OpenSCAD. Also to [tecnoloxia](https://github.com/tecnoloxia) who contributed lots of examples through their 100hex project.
+This library began as an extension of the [L-system OpenSCAD library by Hans Loeblich](https://gist.github.com/thehans/a1494db8046a58832e2ebb10a5908a66), and I'm grateful to Hans for his contributions to the OpenSCAD community, which shaped many of my own libraries and designs. The current engine and turtles are a rewrite. Many grammars in the catalog come from [tecnoloxia](https://github.com/tecnoloxia)'s 100hex project; they're marked `src: 100hex` in `grammars.scad`.
+
+## Licence
+
+MIT; see [LICENSE](LICENSE).
