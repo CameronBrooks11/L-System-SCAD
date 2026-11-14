@@ -31,11 +31,12 @@ module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, st
   p = tuple && len(start) > 2 ? start[2] : [];
   pick = function(v, k, d) !is_undef(v) ? v : _ls_param(p, k, d);
 
-  _n = pick(n, "n", undef);
+  // The assert sits in the assignment so it runs before anything uses n.
+  _n = let (v = pick(n, "n", undef))
+    assert(!is_undef(v), "L_System2D: n is required (no iteration count given or found in the grammar tuple)") v;
   _angle = pick(angle, "angle", 90);
   _w = pick(w, "w", 0.4);
   _poly = pick(poly, "poly", false);
-  assert(!is_undef(_n), "L_System2D: n is required (no iteration count given or found in the grammar tuple)");
 
   tables = create_lookup(tuple ? start[0] : start, tuple ? start[1] : rules, pick(draw_chars, "draw_chars", "F"),
                          pick(move_chars, "move_chars", "M"));

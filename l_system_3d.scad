@@ -112,7 +112,9 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _rules = (is_undef(rules) && is_list(start)) ? start[1] : rules;
 
     // Explicit argument > tuple param > library default
-    _n = !is_undef(n) ? n : _ls_param(p, "n", undef);
+    // The assert sits in the assignment so it runs before anything uses n.
+    _n = let(v = !is_undef(n) ? n : _ls_param(p, "n", undef))
+        assert(!is_undef(v), "L_System3D: n is required (no iteration count given or found in the grammar tuple)") v;
     _angle = !is_undef(angle) ? angle : _ls_param(p, "angle", 90);
     _w = !is_undef(w) ? w : _ls_param(p, "w", 0.4);
     _draw = !is_undef(draw_chars) ? draw_chars : _ls_param(p, "draw_chars", "F");
@@ -126,8 +128,6 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _attract = !is_undef(attract_points) ? attract_points : _ls_param(p, "attract_points", undef);
     _repel = !is_undef(repel_points) ? repel_points : _ls_param(p, "repel_points", undef);
     _btaper = !is_undef(branch_taper) ? branch_taper : _ls_param(p, "branch_taper", 1);
-
-    assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
 
     // First create the lookup tables for rule replacement
