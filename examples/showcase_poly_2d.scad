@@ -1,3 +1,5 @@
+// The 2D curves that close into a shape, drawn as filled polygons.
+// Pick a curve from the dropdown.
 use <../l_systems.scad>;
 
 // ================================

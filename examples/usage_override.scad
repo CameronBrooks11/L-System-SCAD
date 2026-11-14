@@ -5,7 +5,7 @@
 use <../l_systems.scad>;
 
 $ls_rounded = false; // Disable rounded corners (faster preview)
-$ls_debug = true;    // Enable debug echoes
+$ls_debug = false;   // true echoes the rule tables, instructions and coordinates
 $fn = 8;             // Reduce fragment resolution for rounded corners
 
 // Lévy Dragon
