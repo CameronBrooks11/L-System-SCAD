@@ -1,3 +1,5 @@
+// The 2D curves drawn as lines: fractals, space-filling curves and plants.
+// Pick a curve from the dropdown.
 use <../l_systems.scad>;
 
 // ================================

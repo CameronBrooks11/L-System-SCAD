@@ -1,10 +1,15 @@
+// The 3D grammars, and two 2D curves drawn as 3D tubes.
+// Pick one from the dropdown. The seed changes the stochastic tree's branches.
 use <../l_systems.scad>;
 
 // ================================
 // Configuration: Select Your Curve
 // ================================
 
-selected_curve = "hilbert_curve_3d"; // [hilbert_curve_3d, abop_bush, whorl_tree, coral_3d, weeping_tree, leafy_sprig, stochastic_tree, color_tree, reaching_tree, hilbert_curve_tube, dragon_curve_tube]
+selected_curve = "whorl_tree"; // [hilbert_curve_3d, abop_bush, whorl_tree, coral_3d, weeping_tree, leafy_sprig, stochastic_tree, color_tree, reaching_tree, hilbert_curve_tube, dragon_curve_tube]
+
+// Seed for the stochastic tree; each seed grows different branches
+seed = 1; // [1:100]
 
 // ================================
 // Curve Selection Logic
@@ -35,7 +40,7 @@ else if (selected_curve == "leafy_sprig")
 }
 else if (selected_curve == "stochastic_tree")
 {
-    L_System3D(stochastic_tree(), n = 6); // random branch patterns; set $ls_seed to vary
+    L_System3D(stochastic_tree(), n = 6, $ls_seed = seed); // random branch patterns
 }
 else if (selected_curve == "color_tree")
 {

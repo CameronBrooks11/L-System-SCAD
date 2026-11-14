@@ -1,3 +1,4 @@
+// A custom grammar in one call: the Lévy dragon, extruded 1 mm.
 use <../l_systems.scad>;
 
 // Lévy Dragon
