@@ -129,6 +129,7 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
 
     assert(!is_undef(_n), "L_System3D: n is required (no iteration count given or found in the grammar tuple)");
 
+
     // First create the lookup tables for rule replacement
     tables = create_lookup(_axiom, _rules, _draw, _move, _ls3d_valid_chars());
     if (debug)
@@ -176,65 +177,30 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  */
 function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0, attract = undef, repel = undef,
                             branch_taper = 1) =
-    let(l = len(instrs), M0 = [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ]) // end let
-    [for (i = 0, ch = instrs[0], pos = startpos,
-          newpos = (ch == "F" || ch == "M") ? pos + M0[0] : pos,
-          M = (ch == "F") ? _tropism_bend(M0, newpos, tropism, attract, repel, e) : _step_rot(ch, angle, M0),
-          w0 = w,                                              // width entering the segment
-          wid = (ch == "F") ? w * branch_taper : (ch == "!") ? w * taper : w,
-          ci = (ch == ";") ? 1 : (ch == ",") ? -1 : 0,
-          stack = (ch == "[") ? [[ pos, M0, w, ci ]] : [],
-          // Polygon vertices accumulate between "{" and "}"; the accumulator
-          // is independent of the turtle "[" "]" stack, so vertices recorded
-          // inside a branch persist in the enclosing polygon. "." records a vertex.
-          verts = (ch == ".") ? [startpos] : [],
-          entry = (ch == "F") ? [ "seg", pos, newpos, w0, wid, ci ] : undef;
+    let(n = len(instrs), s0 = [ startpos, [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ], w, 0, [], [] ])
+    [for (i = 0, s = s0; i < n;
+          s = _turtle3(s, instrs[i], angle, taper, branch_taper, tropism, e, attract, repel), i = i + 1)
+        let(c = instrs[i])
+        if (c == "F") [ "seg", s[0], s[0] + s[1][0], s[2], s[2] * branch_taper, s[3] ]
+        else if (c == "}") [ "leaf", s[5], s[3] ]];
 
-          i < l; // condition
-
-          // update variables (sequential: each sees the ones above)
-          i = i + 1,
-
-          ch = instrs[i], pos = newpos,
-
-          newpos = (ch == "F" || ch == "M") ? newpos + M[0]
-                   : (ch == "]")            ? stack[0][0]
-                                            : newpos,
-
-          // F bends the frame by tropism/directed growth (_step_rot is identity for F); "]" restores.
-          M = (ch == "]")   ? stack[0][1]
-              : (ch == "F") ? _tropism_bend(M, newpos, tropism, attract, repel, e)
-                            : _step_rot(ch, angle, M),
-
-          w0 = wid,                                          // width entering this segment (before F taper)
-          // F tapers width by branch_taper (so the segment is a cone w0 -> wid,
-          // and child branches inherit the tip width); "!" steps, "]" restores.
-          wid = (ch == "F")   ? wid * branch_taper
-                : (ch == "!") ? wid * taper
-                : (ch == "]") ? stack[0][2]
-                              : wid,
-
-          // color index: ";" brighter, "," darker into the palette; "]" restores.
-          ci = (ch == ";")   ? ci + 1
-               : (ch == ",") ? ci - 1
-               : (ch == "]") ? stack[0][3]
-                             : ci,
-
-          stack = (ch == "[")   ? concat([[ pos, M, wid, ci ]], stack)
-                  : (ch == "]") ? sublist(stack, 1)
-                                : stack,
-
-          verts = (ch == "{")   ? []                        // open a new polygon
-                  : (ch == ".") ? concat(verts, [newpos])   // record a vertex
-                                : verts,                     // carry (survives "[" "]")
-
-          entry = (ch == "F")   ? [ "seg", pos, newpos, w0, wid, ci ]
-                  : (ch == "}") ? [ "leaf", verts, ci ]      // emit filled polygon
-                                : undef
-
-          ) // end for loop
-
-     if (!is_undef(entry)) entry];
+// One turtle step. The state is [position, frame, width, color index, saved
+// states, open polygon's vertices]. F moves along the heading, then bends the
+// frame by tropism and directed growth at the new position, and tapers the
+// width by branch_taper; "[" saves position, frame, width and color, "]"
+// restores them; "{" starts a polygon and "." adds the current position to it.
+function _turtle3(s, c, angle, taper, bt, T, e, att, rep) =
+    let(P = s[0], M = s[1], W = s[2], C = s[3], st = s[4], V = s[5])
+    c == "F"   ? let(Q = P + M[0]) [ Q, _tropism_bend(M, Q, T, att, rep, e), W * bt, C, st, V ]
+    : c == "M" ? [ P + M[0], M, W, C, st, V ]
+    : c == "!" ? [ P, M, W * taper, C, st, V ]
+    : c == ";" ? [ P, M, W, C + 1, st, V ]
+    : c == "," ? [ P, M, W, C - 1, st, V ]
+    : c == "[" ? [ P, M, W, C, _push(st, [ P, M, W, C ]), V ]
+    : c == "]" ? let(t = _top(st)) [ t[0], t[1], t[2], t[3], _pop(st), V ]
+    : c == "{" ? [ P, M, W, C, st, [] ]
+    : c == "." ? [ P, M, W, C, st, concat(V, [P]) ]
+               : [ P, _step_rot(c, angle, M), W, C, st, V ];
 
 // --------------------------------
 // Supporting Modules for Drawing
@@ -286,25 +252,6 @@ module segmented_lines_3d(items, leaf_thickness = 0.2, palette = undef)
 
 // Wrap a color index into a palette of length n (handles negatives from ",").
 function _pidx(i, n) = ((i % n) + n) % n;
-
-/**
- * _chunked
- *
- * Runs its child once per chunk with $chunk set to a <=9999-element index
- * range, so an arbitrarily long list can be walked without tripping
- * OpenSCAD's 10000-element for-range cap. The child iterates: for (j = $chunk).
- *
- * @param size   Total number of elements to cover.
- */
-module _chunked(size)
-{
-    limit = 9999;
-    for (c = [0:1:(size > 0 ? floor((size - 1) / limit) : -1)])
-    {
-        $chunk = [c * limit:1:min(c * limit + limit - 1, size - 1)];
-        children();
-    }
-}
 
 /**
  * _leaf
