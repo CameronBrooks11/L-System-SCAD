@@ -118,7 +118,7 @@ def main():
         report("every grammar matches its fingerprint", not changed and len(stored) == len(names),
                f"{len(names) - len(changed)} of {len(names)} match" + (f", changed: {changed[:5]}" if changed else ""))
 
-        for f in sorted(os.listdir(os.path.join(ROOT, "examples"))):
+        for f in sorted(f for f in os.listdir(os.path.join(ROOT, "examples")) if f.endswith(".scad")):
             result = run(openscad, os.path.join(ROOT, "examples", f), os.path.join(tmp, "x.csg"), export="csg")
             bad = [l for l in (result.stderr + result.stdout).splitlines() if "WARNING" in l or "ERROR" in l]
             report(f"examples/{f} evaluates", result.returncode == 0 and not bad, bad[:1] or "clean")
