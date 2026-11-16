@@ -1,4 +1,4 @@
-# l-system-scad
+# lindenmayer-system-scad
 
 An L-system implementation in OpenSCAD. L-systems (Lindenmayer systems) are parallel rewriting systems and a type of formal grammar, commonly used to simulate plant growth and generate fractals.
 
@@ -50,12 +50,22 @@ Rules can also be **stochastic**: a rule's right-hand side may be a list of weig
 
 The 3D turtle starts at the origin heading +Z. If your L-system rules use different symbols than the default "F" for forward or "M" for move, you can specify custom characters using the `draw_chars` and `move_chars` parameters. An extensive range of examples can be found under `examples` folder.
 
+## Install
+
+Clone the repository into your OpenSCAD library folder (**File → Show Library Folder** in OpenSCAD):
+
+```sh
+git clone https://github.com/CameronBrooks11/lindenmayer-system-scad.git
+```
+
+The `use <lindenmayer-system-scad/...>` lines below expect the folder to keep that name.
+
 ## Usage
 
 Render a predefined curve from the catalog (its curated defaults ride along in the grammar tuple; explicit arguments override them):
 
 ```scad
-use <l-system-scad/l_systems.scad>;
+use <lindenmayer-system-scad/l_systems.scad>;
 
 L_System2D(dragon_curve());
 L_System2D(gosper_curve(), n = 3, w = 0.6);
@@ -65,7 +75,7 @@ linear_extrude(2) L_System2D(hilbert_curve(), n = 6, w = 1);
 Render 3D structures — and because grammar tuples are dimension-free data, any 2D curve also renders as a 3D tube:
 
 ```scad
-use <l-system-scad/l_systems.scad>;
+use <lindenmayer-system-scad/l_systems.scad>;
 
 L_System3D(whorl_tree());                 // tapered 3D tree
 L_System3D(hilbert_curve_3d(), n = 4);    // 3D space-filling curve
@@ -80,7 +90,7 @@ L_System3D(reaching_tree());              // directed growth toward a point
 A stochastic grammar and a directed-growth call written out:
 
 ```scad
-use <l-system-scad/l_systems.scad>;
+use <lindenmayer-system-scad/l_systems.scad>;
 
 // each "A" randomly grows one of two branch patterns
 L_System3D("FA",
@@ -94,7 +104,7 @@ L_System3D(whorl_tree(), attract_points = [[ 40, 0, 45 ]], tropism_strength = 0.
 Define a custom grammar (the catalog is not needed):
 
 ```scad
-use <l-system-scad/l_system_2d.scad>;
+use <lindenmayer-system-scad/l_system_2d.scad>;
 
 L_System2D("FX", [ "X=X+YF+", "Y=-FX-Y" ], n = 12, angle = 90, w = 0.4);
 ```
@@ -102,7 +112,7 @@ L_System2D("FX", [ "X=X+YF+", "Y=-FX-Y" ], n = 12, angle = 90, w = 0.4);
 Override library settings — these are `$`-special variables, so they work through `use`, per call or globally:
 
 ```scad
-use <l-system-scad/l_systems.scad>;
+use <lindenmayer-system-scad/l_systems.scad>;
 
 $ls_rounded = false; // no rounded joints/caps (faster preview)
 $ls_debug = true;    // echo intermediate tables/instructions/coords
